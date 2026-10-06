@@ -83,11 +83,16 @@ internal static class Program
             lifetime.Start(Array.Empty<string>());
             try
             {
-                host.StopAsync().GetAwaiter().GetResult();
+                using var stopCts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                host.StopAsync(stopCts.Token).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
                 appLogger.Error(ex, "Error deteniendo host");
+            }
+            finally
+            {
+                Environment.Exit(0);
             }
         }
         catch (Exception ex)
@@ -177,9 +182,14 @@ internal sealed class HeadlessCaptureApp : Application
                 {
                     Process.Start(new ProcessStartInfo(exePath, Qapptia.Core.Constants.ArgRestart) { UseShellExecute = true });
                 }
+                try { trayService?.Dispose(); } catch { }
                 desktop.Shutdown();
             }));
-            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuExit, () => desktop.Shutdown()));
+            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuExit, () =>
+            {
+                try { trayService?.Dispose(); } catch { }
+                desktop.Shutdown();
+            }));
 
             var iconPath = Path.Combine(AppContext.BaseDirectory, Qapptia.Core.Constants.AssetsDirectoryName, Qapptia.Core.Constants.TrayIconFileName);
             trayService?.Initialize(menuDef, iconPath);

@@ -118,6 +118,30 @@ public class LauncherTests
     }
 
     [Fact]
+    public async Task DispatchPlanAsyncWithProgressReportsSequentialMilestones()
+    {
+        var mock = new FakeProcessLauncher();
+        var plan = new LaunchPlan(LaunchTarget.Suite, null, ShouldEnsureCapture: true, ShouldEnsureEditor: true, ShouldEnsureConfig: false);
+
+        var reports = new List<LaunchProgressReport>();
+        var progress = new SynchronousProgress<LaunchProgressReport>(reports.Add);
+
+        await LauncherOrchestrator.DispatchPlanAsync(plan, @"C:\Qapptia", mock, progress);
+
+        Assert.NotEmpty(reports);
+        Assert.Contains(reports, r => r.Stage == LaunchStage.Starting);
+        Assert.Contains(reports, r => r.Stage == LaunchStage.Capture);
+        Assert.Contains(reports, r => r.Stage == LaunchStage.Editor);
+        Assert.Contains(reports, r => r.Stage == LaunchStage.Ui);
+        Assert.True(reports[^1].Percent >= 90);
+    }
+
+    private sealed class SynchronousProgress<T>(Action<T> callback) : IProgress<T>
+    {
+        public void Report(T value) => callback(value);
+    }
+
+    [Fact]
     public void MutexSingleInstanceGuardIsRunningReflectsHeldStatus()
     {
         string uniqueKey = "qapptia_unit_test_" + Guid.NewGuid().ToString("N");

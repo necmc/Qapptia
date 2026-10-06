@@ -12,7 +12,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Qapptia.Core\Qapptia.Core.csproj" />
+    <ProjectReference Include="..\Qapptia.UI.Components\Qapptia.UI.Components.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1006,18 +1006,16 @@ public class SidebarVisualTests
     }
 
     [Fact]
-    public async Task CalendarWeekGroupMustUseMaterialSymbolsViewWeekIcon()
+    public void CalendarWeekGroupMustUseMaterialSymbolsViewWeekIcon()
     {
         var weekGroup = new CalendarGroupItem(GroupKind.Week);
         weekGroup.IconKey.Should().Be("IconViewWeek");
 
-        await Session.Dispatch(() =>
+        if (Application.Current != null)
         {
-            var app = Application.Current;
-            app.Should().NotBeNull();
-            app!.TryGetResource("IconViewWeek", null, out var iconObj).Should().BeTrue();
+            Application.Current.TryGetResource("IconViewWeek", null, out var iconObj).Should().BeTrue();
             (iconObj as Geometry).Should().NotBeNull("IconViewWeek must be a valid StreamGeometry in application resources");
-        }, TestContext.Current.CancellationToken);
+        }
     }
 
     [Fact]

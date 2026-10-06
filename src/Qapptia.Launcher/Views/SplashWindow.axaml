@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:core="using:Qapptia.Core"
+        xmlns:common="using:Qapptia.Launcher.Common"
+        x:Class="Qapptia.Launcher.Views.SplashWindow"
+        Title="{x:Static core:Constants.AppName}"
+        Width="{x:Static common:Constants.SplashWindowWidth}"
+        Height="{x:Static common:Constants.SplashWindowHeight}"
+        WindowStartupLocation="CenterScreen"
+        WindowDecorations="None"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent">
+
+    <!-- Tarjeta del Splash con esquinas redondeadas y sombra perimetral -->
+    <Border Margin="12"
+            CornerRadius="16"
+            BoxShadow="0 8 32 0 #70000000"
+            Background="#16181D"
+            BorderBrush="#2D313A"
+            BorderThickness="1"
+            ClipToBounds="True">
+
+        <Panel>
+            <!-- Resplandor sutil de acento en la esquina superior derecha -->
+            <Ellipse Width="240"
+                     Height="240"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Top"
+                     Margin="0,-60,-60,0">
+                <Ellipse.Fill>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#2400A3FF" Offset="0.0" />
+                        <GradientStop Color="#0000A3FF" Offset="1.0" />
+                    </LinearGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+
+            <Grid RowDefinitions="*,Auto" Margin="28,26,28,24">
+                <!-- Zona Superior: Identidad y Marca -->
+                <Grid Grid.Row="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center">
+                    <!-- Isotipo Oficial de Qapptia -->
+                    <Border Grid.Column="0"
+                            Width="72"
+                            Height="72"
+                            CornerRadius="14"
+                            ClipToBounds="True"
+                            Background="#1E293B"
+                            BorderBrush="#334155"
+                            BorderThickness="1"
+                            BoxShadow="0 4 12 0 #30000000"
+                            VerticalAlignment="Center">
+                        <Image Source="avares://Qapptia/Assets/app_icon.ico"
+                               Width="56"
+                               Height="56"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Textos de Título, Versión y Subtítulo -->
+                    <StackPanel Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                            <TextBlock Text="{x:Static core:Constants.AppName}"
+                                       FontSize="30"
+                                       FontWeight="Bold"
+                                       Foreground="#FFFFFF" />
+
+                            <Border Background="#16324A"
+                                    BorderBrush="#00A3FF"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Source={x:Static core:Constants.AppVersion}, StringFormat={x:Static common:Constants.VersionBadgeFormat}}"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="#38BDF8" />
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Text="{x:Static common:Constants.SplashSubtitle}"
+                                   FontSize="13"
+                                   Foreground="#94A3B8"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Zona Inferior: Barra de Progreso y Estado -->
+                <StackPanel Grid.Row="1" Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock x:Name="StatusTextBlock"
+                                   Grid.Column="0"
+                                   Text="{x:Static common:Constants.ProgressStarting}"
+                                   FontSize="12"
+                                   Foreground="#94A3B8"
+                                   TextTrimming="CharacterEllipsis" />
+
+                        <TextBlock x:Name="PercentTextBlock"
+                                   Grid.Column="1"
+                                   Text="{x:Static common:Constants.InitialPercentText}"
+                                   FontSize="12"
+                                   Foreground="#64748B"
+                                   FontWeight="SemiBold" />
+                    </Grid>
+
+                    <ProgressBar x:Name="LoadingProgressBar"
+                                 Height="4"
+                                 Minimum="0"
+                                 Maximum="{x:Static common:Constants.CompleteProgressPercent}"
+                                 Value="{x:Static common:Constants.InitialProgressPercent}"
+                                 CornerRadius="2"
+                                 Foreground="{DynamicResource M3PrimaryBrush}"
+                                 Background="#282D37" />
+                </StackPanel>
+            </Grid>
+        </Panel>
+    </Border>
+</Window>

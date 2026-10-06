@@ -168,10 +168,24 @@ public static class LauncherOrchestrator
     /// <summary>
     /// Ejecuta el despacho del plan asegurando o despertando los procesos correspondientes.
     /// </summary>
-    public static async Task DispatchPlanAsync(LaunchPlan plan, string baseDirectory, IProcessLauncher launcher)
+    public static Task DispatchPlanAsync(LaunchPlan plan, string baseDirectory, IProcessLauncher launcher)
     {
+        return DispatchPlanAsync(plan, baseDirectory, launcher, progress: null);
+    }
+
+    /// <summary>
+    /// Ejecuta el despacho del plan asegurando o despertando los procesos correspondientes, reportando hitos de avance.
+    /// </summary>
+    public static async Task DispatchPlanAsync(
+        LaunchPlan plan,
+        string baseDirectory,
+        IProcessLauncher launcher,
+        IProgress<LaunchProgressReport>? progress)
+    {
+        progress?.Report(new LaunchProgressReport(LaunchStage.Starting, 15));
         if (plan.ShouldEnsureCapture)
         {
+            progress?.Report(new LaunchProgressReport(LaunchStage.Capture, 35));
             if (!launcher.IsInstanceActive(IpcChannels.Capture))
             {
                 string capturePath = ResolveExecutablePath(baseDirectory, Constants.CaptureExecutableName);
@@ -186,6 +200,7 @@ public static class LauncherOrchestrator
 
         if (plan.ShouldEnsureEditor)
         {
+            progress?.Report(new LaunchProgressReport(LaunchStage.Editor, 60));
             if (!launcher.IsInstanceActive(IpcChannels.Editor))
             {
                 string editorPath = ResolveExecutablePath(baseDirectory, Constants.EditorExecutableName);
@@ -200,6 +215,7 @@ public static class LauncherOrchestrator
 
         if (plan.ShouldEnsureConfig)
         {
+            progress?.Report(new LaunchProgressReport(LaunchStage.Config, 80));
             if (!launcher.IsInstanceActive(IpcChannels.Config))
             {
                 string configPath = ResolveExecutablePath(baseDirectory, Constants.ConfigExecutableName);
@@ -211,6 +227,8 @@ public static class LauncherOrchestrator
                 await launcher.SendWakeUpAsync(IpcChannels.Config).ConfigureAwait(false);
             }
         }
+
+        progress?.Report(new LaunchProgressReport(LaunchStage.Ui, 90));
     }
 
     private static string FormatArgument(string arg)

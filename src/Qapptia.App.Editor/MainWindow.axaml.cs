@@ -68,6 +68,12 @@ public partial class MainWindow : Window
                     currentVm.SelectedNode = match;
                 }
             }
+
+            // Notificar que el editor está visualmente listo tras la primera pasada de renderizado
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                Program.IsEditorReady = true;
+            }, Avalonia.Threading.DispatcherPriority.Render);
         };
     }
 

@@ -29,6 +29,7 @@ namespace Qapptia.App.Editor;
 public sealed class Program
 {
     public static IServiceProvider? Services { get; private set; }
+    public static bool IsEditorReady { get; set; }
 
     [STAThread]
     public static void Main(string[] args)
@@ -85,6 +86,9 @@ public sealed class Program
                                 ThemeManager.ApplyTheme(themeMsg.Theme);
                             });
                             return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });
+
+                        case Ping:
+                            return Task.FromResult<IpcMessage>(IsEditorReady ? new Pong() : new Ack { OriginalType = msg.Type });
 
                         default:
                             return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });

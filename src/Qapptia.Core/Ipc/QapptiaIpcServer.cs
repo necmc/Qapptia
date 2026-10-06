@@ -165,10 +165,15 @@ public sealed class QapptiaIpcServer : IDisposable
         }
         try
         {
-            await Task.WhenAll(_acceptTasks).ConfigureAwait(false);
+            var allTasks = Task.WhenAll(_acceptTasks);
+            await Task.WhenAny(allTasks, Task.Delay(500, CancellationToken.None)).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         catch (AggregateException) { }
+        catch (Exception ex)
+        {
+            _logger.Warning(ex, "Excepción durante la detención de IPC server en {Pipe}", _pipeName);
+        }
         _logger.Information("IPC server detenido en {Pipe}", _pipeName);
     }
 
