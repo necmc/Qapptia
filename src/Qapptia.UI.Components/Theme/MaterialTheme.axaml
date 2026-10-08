@@ -7,10 +7,14 @@
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
     </Style>
 
-    <!-- Botones estándar -->
+    <!-- =================================================================== -->
+    <!-- BOTONES: Base Estándar y Acento Transversales                       -->
+    <!-- =================================================================== -->
+
+    <!-- 1. Botón estándar / neutro (plano, sin contorno forzado) -->
     <Style Selector="Button">
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button PathIcon">
         <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
@@ -21,29 +25,60 @@
     <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource M3HoverBrush}" />
     </Style>
+    <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
+    </Style>
+    <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Opacity" Value="0.5" />
+    </Style>
 
-    <!-- Botón con contorno neutro (estilo Outline para botones de acción) -->
+    <!-- 2. Botón con contorno (Classes="outline-button") para diálogos y formularios -->
     <Style Selector="Button.outline-button">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnSurfaceBrush}" />
         <Setter Property="Cursor" Value="Hand" />
-    </Style>
-    <Style Selector="Button.outline-button /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineVariantBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="6" />
     </Style>
     <Style Selector="Button.outline-button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource M3HoverBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineBrush}" />
     </Style>
     <Style Selector="Button.outline-button:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource M3SurfaceVariantBrush}" />
+        <Setter Property="Background" Value="{DynamicResource M3SurfaceContainerHighBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource M3OutlineBrush}" />
+    </Style>
+    <Style Selector="Button.outline-button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Opacity" Value="0.5" />
+    </Style>
+
+    <!-- 3. Botón de acento / primario (Classes="accent") -->
+    <Style Selector="Button.accent, Button.outline-button.accent">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.outline-button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.outline-button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource M3PrimaryPressedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource M3PrimaryPressedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.accent TextBlock, Button.outline-button.accent TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.accent PathIcon, Button.outline-button.accent PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource M3OnPrimaryBrush}" />
     </Style>
 
     <!-- =================================================================== -->

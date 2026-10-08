@@ -57,12 +57,12 @@
                             <!-- Directorio de guardado -->
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Guardar en:" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding SavePath}" Margin="0,0,8,0" IsReadOnly="True" />
-                            <Button Grid.Row="0" Grid.Column="2" Content="Examinar..." Command="{Binding BrowsePathCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                            <Button Grid.Row="0" Grid.Column="2" Content="Examinar..." Command="{Binding BrowsePathCommand}" Classes="outline-button" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
                             
                             <!-- Formato de archivo -->
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Formato archivo:" VerticalAlignment="Center" Margin="0,12,8,0" />
                             <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding FilenameFormat}" Margin="0,12,8,0" PlaceholderText="Ej. Captura_YYYYMMDD_HHmmSS" />
-                            <Button Grid.Row="1" Grid.Column="2" Content="?" Width="32" Height="32" Margin="0,12,0,0" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                            <Button Grid.Row="1" Grid.Column="2" Content="?" Classes="outline-button" Width="32" Height="32" Margin="0,12,0,0" Padding="0" HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
                                 <Button.Flyout>
                                     <Flyout>
                                         <TextBlock Text="Usa los siguientes valores para formatear la fecha:&#x0a;&#x0a;YYYY = Año (4 digitos)&#x0a;MM = Mes (2 digitos)&#x0a;DD = Día (2 digitos)&#x0a;HH = Horas&#x0a;mm = Minutos&#x0a;SS = Segundos" />
@@ -171,6 +171,7 @@
                                            FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
                                 <Button Grid.Column="1" 
                                         Command="{Binding SponsorCommand}"
+                                        IsEnabled="{Binding CanSponsor}"
                                         ToolTip.Tip="{Binding SponsorText}"
                                         Width="210"
                                         Height="36"
@@ -208,7 +209,8 @@
                                         Command="{Binding UpdateActionCommand}" 
                                         IsEnabled="{Binding CanExecuteUpdateAction}" 
                                         ToolTip.Tip="{Binding UpdateButtonText}"
-                                        Width="210"
+                                        MinWidth="210"
+                                        Padding="14,0"
                                         Height="36"
                                         HorizontalContentAlignment="Center"
                                         VerticalContentAlignment="Center"
@@ -217,6 +219,7 @@
                                         Classes.accent="{Binding IsUpdateAvailable}">
                                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <PathIcon Data="{StaticResource IconRefresh}" Width="16" Height="16" VerticalAlignment="Center" IsVisible="{Binding !IsUpdateAvailable}" />
+                                        <PathIcon Data="{StaticResource IconDownload}" Width="16" Height="16" VerticalAlignment="Center" IsVisible="{Binding IsUpdateAvailable}" />
                                         <TextBlock Text="{Binding UpdateButtonText}" FontSize="14" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Button>
@@ -256,6 +259,7 @@
                         IsCancel="True"
                         MinWidth="90" 
                         Height="32" 
+                        Classes="outline-button"
                         HorizontalContentAlignment="Center" />
             </Grid>
         </Border>

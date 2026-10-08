@@ -88,6 +88,7 @@ public static class Constants
     public const int DefaultHttpTimeoutMs = 5000;
     public const int StartupUpdateCheckDelayMs = 3000;
     public const int UpdateCheckCooldownMs = 2000;
+    public const int SponsorCooldownMs = 2000;
     public static readonly TimeSpan PeriodicUpdateCheckInterval = TimeSpan.FromHours(24);
 
     // Textos de apoyo y contribución compartidos (numerados para estabilidad ante cambios de textos)

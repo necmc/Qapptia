@@ -172,7 +172,14 @@ internal sealed class HeadlessCaptureApp : Application
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuEditor, () => LaunchApp(Qapptia.Core.Constants.EditorExecutableName, Qapptia.Core.Constants.ArgEditor)));
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuConfig, () => LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgConfig)));
             menuDef.Items.Add(new TrayMenuSeparatorItem());
-            menuDef.Items.Add(new TrayMenuActionItem(Qapptia.Core.Constants.SponsorDefaultActionTitle, () => shellService?.OpenUrl(Qapptia.Core.Constants.DefaultSponsorUrl), textProvider: () => SponsorVisualHelper.GetRandomCombination().Text));
+            long lastSponsorTicks = 0;
+            menuDef.Items.Add(new TrayMenuActionItem(Qapptia.Core.Constants.SponsorDefaultActionTitle, () =>
+            {
+                var now = Environment.TickCount64;
+                if (now - lastSponsorTicks < Qapptia.Core.Constants.SponsorCooldownMs) return;
+                lastSponsorTicks = now;
+                shellService?.OpenUrl(Qapptia.Core.Constants.DefaultSponsorUrl);
+            }, textProvider: () => SponsorVisualHelper.GetRandomCombination().Text));
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuAbout, () => LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgAbout)));
             menuDef.Items.Add(new TrayMenuSeparatorItem());
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuRestart, () =>

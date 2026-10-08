@@ -46,6 +46,12 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     public bool IsSponsorStyleD => _sponsorVisual.StyleKey == SponsorVisualHelper.StyleD;
     public IImage? SponsorIcon => Application.Current?.TryGetResource(SponsorIconKey, null, out var res) == true ? res as IImage : null;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSponsor))]
+    private bool _isSponsorCooldown;
+
+    public bool CanSponsor => !IsSponsorCooldown;
+
 
     public SidebarViewModel Sidebar { get; }
     public ToolbarViewModel Toolbar { get; }
@@ -494,6 +500,28 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public void Sponsor()
     {
+        if (!CanSponsor) return;
+
+        IsSponsorCooldown = true;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(Qapptia.Core.Constants.SponsorCooldownMs).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore task failures
+            }
+            finally
+            {
+                _dispatcher(() =>
+                {
+                    IsSponsorCooldown = false;
+                });
+            }
+        });
+
         try
         {
             _shellService.OpenUrl(Qapptia.Core.Constants.DefaultSponsorUrl);

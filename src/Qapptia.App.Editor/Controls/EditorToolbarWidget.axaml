@@ -30,6 +30,19 @@
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
+        <!-- Botones de la barra de herramientas sin contornos accidentales -->
+        <Style Selector="Button:not(.sponsor-button)">
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button:not(.sponsor-button) /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button:not(.sponsor-button):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+        <Style Selector="Button:not(.sponsor-button):pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
     </UserControl.Styles>
     <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8">
         <Grid ColumnDefinitions="*, Auto">
@@ -314,6 +327,7 @@
                         Classes.SponsorStyleC="{Binding IsSponsorStyleC}"
                         Classes.SponsorStyleD="{Binding IsSponsorStyleD}"
                         Command="{Binding SponsorCommand}"
+                        IsEnabled="{Binding CanSponsor}"
                         ToolTip.Tip="{Binding SponsorText}"
                         Padding="8,3"
                         Height="30"
@@ -330,6 +344,7 @@
                     <Button Command="{Binding LaunchOrWakeCaptureCommand}"
                             ToolTip.Tip="{Binding CaptureStatusToolTip}"
                             Background="Transparent"
+                            BorderBrush="Transparent"
                             Padding="2"
                             VerticalContentAlignment="Center">
                         <Border Background="{Binding CaptureStatusBackgroundBrush}"
@@ -344,14 +359,14 @@
 
                 <!-- Configuración (tuerca) -->
                 <Border Background="{DynamicResource M3SurfaceVariantBrush}" CornerRadius="6" Padding="2" VerticalAlignment="Center">
-                    <Button Command="{Binding OpenConfigCommand}" ToolTip.Tip="Configuración" Background="Transparent" Padding="4" VerticalContentAlignment="Center">
+                    <Button Command="{Binding OpenConfigCommand}" ToolTip.Tip="Configuración" Background="Transparent" BorderBrush="Transparent" Padding="4" VerticalContentAlignment="Center">
                         <PathIcon Data="{StaticResource IconConfig}" Width="16" Height="16" />
                     </Button>
                 </Border>
 
                 <!-- Acerca de (solo icono a la derecha de Configuración) -->
                 <Border Background="{DynamicResource M3SurfaceVariantBrush}" CornerRadius="6" Padding="2" VerticalAlignment="Center">
-                    <Button Command="{Binding OpenAboutCommand}" ToolTip.Tip="Acerca de Qapptia" Background="Transparent" Padding="4" VerticalContentAlignment="Center">
+                    <Button Command="{Binding OpenAboutCommand}" ToolTip.Tip="Acerca de Qapptia" Background="Transparent" BorderBrush="Transparent" Padding="4" VerticalContentAlignment="Center">
                         <PathIcon Data="{StaticResource IconInfo}" Width="16" Height="16" />
                     </Button>
                 </Border>

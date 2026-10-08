@@ -50,6 +50,12 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     public bool IsSponsorStyleD => _sponsorVisual.StyleKey == SponsorVisualHelper.StyleD;
     public IImage? SponsorIcon => Application.Current?.TryGetResource(SponsorIconKey, null, out var res) == true ? res as IImage : null;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanSponsor))]
+    private bool _isSponsorCooldown;
+
+    public bool CanSponsor => !IsSponsorCooldown;
+
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanExecuteUpdateAction))]
@@ -275,6 +281,28 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Sponsor()
     {
+        if (!CanSponsor) return;
+
+        IsSponsorCooldown = true;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(Constants.SponsorCooldownMs).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore task failures
+            }
+            finally
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    IsSponsorCooldown = false;
+                });
+            }
+        });
+
         try
         {
             _shellService.OpenUrl(Constants.DefaultSponsorUrl);
@@ -306,10 +334,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                     DownloadUrl = !string.IsNullOrWhiteSpace(result.LatestRelease.DownloadUrl)
                         ? result.LatestRelease.DownloadUrl
                         : Constants.DefaultDownloadUrl;
-                    var notes = !string.IsNullOrWhiteSpace(result.LatestRelease.ReleaseNotes)
-                        ? $" ({result.LatestRelease.ReleaseNotes})"
-                        : string.Empty;
-                    UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateAvailableFormat, result.LatestRelease.Version, notes);
+                    UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateAvailableFormat, result.LatestRelease.Version);
                     UpdateButtonText = ConfigConstants.UpdateButtonDownload;
                 }
                 else if (result.Status == UpdateCheckStatus.UpToDate)
@@ -344,33 +369,48 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
                 IsCheckingUpdate = false;
-                IsUpdateCooldown = true;
-            });
-
-            _ = Task.Run(async () =>
-            {
-                try
+                // Si no hay actualización disponible (al día o error), activamos cooldown
+                // para evitar clics compulsivos hacia el servidor de comprobación.
+                // Si sí hay actualización disponible, el botón queda inmediatamente activo.
+                if (!IsUpdateAvailable)
                 {
-                    await Task.Delay(Constants.UpdateCheckCooldownMs).ConfigureAwait(false);
-                }
-                catch
-                {
-                    // Ignore task failures
-                }
-                finally
-                {
-                    Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-                    {
-                        IsUpdateCooldown = false;
-                    });
+                    StartUpdateCooldown();
                 }
             });
         }
     }
 
+    private void StartUpdateCooldown()
+    {
+        IsUpdateCooldown = true;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(Constants.UpdateCheckCooldownMs).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignore task failures
+            }
+            finally
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    IsUpdateCooldown = false;
+                });
+            }
+        });
+    }
+
     [RelayCommand]
     private void DownloadUpdate()
     {
+        if (!CanExecuteUpdateAction) return;
+
+        // Evita aperturas compulsivas de pestañas en el navegador
+        StartUpdateCooldown();
+
         try
         {
             var targetUrl = !string.IsNullOrWhiteSpace(DownloadUrl) ? DownloadUrl : Constants.DefaultDownloadUrl;
@@ -385,13 +425,14 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task UpdateActionAsync()
     {
+        if (!CanExecuteUpdateAction) return;
+
         if (IsUpdateAvailable)
         {
             DownloadUpdate();
         }
         else
         {
-            if (!CanExecuteUpdateAction) return;
             await CheckUpdatesAsync();
         }
     }

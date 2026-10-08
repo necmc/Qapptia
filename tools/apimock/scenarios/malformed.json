@@ -1,0 +1,4 @@
+{
+  "statusCode": 200,
+  "rawBody": "{\"status\":\"ok\",\"mensaje\":\"payload_sin_campo_version_para_probar_deserializador\"}"
+}

@@ -13,6 +13,7 @@
             <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="#F1F3F5" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="#E9ECEF" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="#DEE2E6" />
+            <SolidColorBrush x:Key="M3SurfaceVariantBrush" Color="#F1F3F5" />
             
             <!-- Texto e iconos -->
             <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="#111827" />
@@ -25,6 +26,8 @@
             
             <!-- Acento y estado seleccionado -->
             <SolidColorBrush x:Key="M3PrimaryBrush" Color="#0B57D0" />
+            <SolidColorBrush x:Key="M3PrimaryHoverBrush" Color="#1A73E8" />
+            <SolidColorBrush x:Key="M3PrimaryPressedBrush" Color="#0842A0" />
             <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="#A8D1FF" />
             <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="#002A5C" />
@@ -52,6 +55,7 @@
             <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="#F1F3F5" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="#E9ECEF" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="#DEE2E6" />
+            <SolidColorBrush x:Key="M3SurfaceVariantBrush" Color="#F1F3F5" />
             
             <!-- Texto e iconos -->
             <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="#111827" />
@@ -64,6 +68,8 @@
             
             <!-- Acento y estado seleccionado -->
             <SolidColorBrush x:Key="M3PrimaryBrush" Color="#0B57D0" />
+            <SolidColorBrush x:Key="M3PrimaryHoverBrush" Color="#1A73E8" />
+            <SolidColorBrush x:Key="M3PrimaryPressedBrush" Color="#0842A0" />
             <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="#A8D1FF" />
             <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="#002A5C" />
@@ -91,6 +97,7 @@
             <SolidColorBrush x:Key="M3SurfaceContainerBrush" Color="#1F1F1F" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighBrush" Color="#282828" />
             <SolidColorBrush x:Key="M3SurfaceContainerHighestBrush" Color="#323232" />
+            <SolidColorBrush x:Key="M3SurfaceVariantBrush" Color="#282828" />
             
             <!-- Texto e iconos -->
             <SolidColorBrush x:Key="M3OnSurfaceBrush" Color="#FFFFFF" />
@@ -103,6 +110,8 @@
             
             <!-- Acento y estado seleccionado -->
             <SolidColorBrush x:Key="M3PrimaryBrush" Color="#A8C7FA" />
+            <SolidColorBrush x:Key="M3PrimaryHoverBrush" Color="#C2E7FF" />
+            <SolidColorBrush x:Key="M3PrimaryPressedBrush" Color="#7CA3E2" />
             <SolidColorBrush x:Key="M3OnPrimaryBrush" Color="#003062" />
             <SolidColorBrush x:Key="M3PrimaryContainerBrush" Color="#004A77" />
             <SolidColorBrush x:Key="M3OnPrimaryContainerBrush" Color="#C2E7FF" />

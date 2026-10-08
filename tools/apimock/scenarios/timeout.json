@@ -1,0 +1,7 @@
+{
+  "statusCode": 200,
+  "delayMs": 6000,
+  "body": {
+    "version": "2.1.0"
+  }
+}
