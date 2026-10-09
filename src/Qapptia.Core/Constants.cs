@@ -86,10 +86,20 @@ public static class Constants
     public const string DefaultDownloadUrl = "https://localhost:8080/download";
     public const string DefaultVersionApiUrl = "https://localhost:8080/api/version";
     public const int DefaultHttpTimeoutMs = 5000;
+    public const int DefaultIpcTimeoutMs = 1000;
+    public const int QuickIpcTimeoutMs = 800;
     public const int StartupUpdateCheckDelayMs = 3000;
+    public const int StartupUpdateCheckMaxJitterMs = 15000;
     public const int UpdateCheckCooldownMs = 2000;
     public const int SponsorCooldownMs = 2000;
     public static readonly TimeSpan PeriodicUpdateCheckInterval = TimeSpan.FromHours(24);
+    public static readonly TimeSpan PeriodicUpdateCheckMaxJitter = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan FailedUpdateCheckRetryInterval = TimeSpan.FromMinutes(30);
+    public static readonly TimeSpan FailedUpdateCheckRetryMaxJitter = TimeSpan.FromMinutes(5);
+
+    // Claves de iconos del sistema
+    public const string IconInfo = "IconInfo";
+    public const string IconDownload = "IconDownload";
 
     // Textos de apoyo y contribución compartidos (numerados para estabilidad ante cambios de textos)
     public const string SponsorText1 = "Invítame un café";
@@ -125,6 +135,20 @@ public static class Constants
     public const string AssetsDirectoryName = "Assets";
     public const string TrayIconFileName = "tray_icon.ico";
     public const string AppIconFileName = "app_icon.ico";
+
+    // Textos y configuraciones de actualización
+    public const string ToolTipAbout = "Acerca de Qapptia";
+    public const string ToolTipUpdateAvailableFormat = "Nueva versión v{0} disponible. Haz clic para descargar";
+    public const string TrayMenuDownloadUpdateFormat = "🚀 Descargar actualización (v{0})";
+    public const int UpdateDownloadCooldownMs = 2000;
+    public const string UpdateErrorServerUnavailableFormat = "Servidor no disponible ({0}).";
+    public const string UpdateErrorEmptyResponse = "El servidor no devolvió información.";
+    public const string UpdateErrorMissingVersion = "La respuesta del servidor no contiene información de versión válida.";
+    public const string UpdateErrorInvalidVersionFormat = "El formato de la versión recibida no es válido.";
+    public const string UpdateErrorCheckCancelled = "Comprobación cancelada.";
+    public const string UpdateErrorTimeout = "El servidor no responde, tiempo de espera agotado.";
+    public const string UpdateErrorUnrecognizedResponse = "No se pudo interpretar la respuesta del servidor.";
+    public const string UpdateErrorConnectionFailed = "No se pudo conectar con el servidor.";
 
 #if DEBUG
     public static string DefaultConfigPath => Path.Combine(AppContext.BaseDirectory, ConfigFileName);

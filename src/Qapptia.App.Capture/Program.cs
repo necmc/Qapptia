@@ -143,6 +143,8 @@ internal sealed class AppLoggerMarker { }
 
 internal sealed class HeadlessCaptureApp : Application
 {
+    private static readonly System.Text.CompositeFormat s_trayDownloadFormat = System.Text.CompositeFormat.Parse(Qapptia.Core.Constants.TrayMenuDownloadUpdateFormat);
+
     public IHost AppHost { get; set; } = null!;
 
     public override void Initialize()
@@ -163,6 +165,28 @@ internal sealed class HeadlessCaptureApp : Application
             var shellService = AppHost?.Services.GetService<IShellService>();
 
             var menuDef = new TrayMenuDefinition();
+
+            long lastUpdateTicks = 0;
+            menuDef.Items.Add(new TrayMenuActionItem(
+                string.Empty,
+                () =>
+                {
+                    var now = Environment.TickCount64;
+                    if (now - lastUpdateTicks < Qapptia.Core.Constants.UpdateDownloadCooldownMs) return;
+                    lastUpdateTicks = now;
+                    var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
+                    var url = !string.IsNullOrWhiteSpace(state?.DownloadUrl) ? state.DownloadUrl : Qapptia.Core.Constants.DefaultDownloadUrl;
+                    shellService?.OpenUrl(url);
+                },
+                textProvider: () =>
+                {
+                    var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
+                    return state != null
+                        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, s_trayDownloadFormat, state.Version)
+                        : string.Empty;
+                },
+                isVisibleProvider: () => Qapptia.Core.Services.InMemoryUpdateStateStore.HasUpdate));
+            menuDef.Items.Add(new TrayMenuSeparatorItem(isVisibleProvider: () => Qapptia.Core.Services.InMemoryUpdateStateStore.HasUpdate));
 
             var config = AppHost?.Services.GetService<IConfigService>();
 

@@ -1,0 +1,14 @@
+{
+  "statusCode": 200,
+  "delayMs": 0,
+  "body": {
+    "version": "1.9.0",
+    "releaseNotes": "### Qapptia v1.9.0\n\n- Versión previa estable.",
+    "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedAt": "2026-09-01T12:00:00Z",
+    "downloadUrl": "https://localhost:8080/download",
+    "sponsorUrl": "https://localhost:8080/sponsor",
+    "isCritical": false,
+    "minSupportedVersion": "1.0.0"
+  }
+}

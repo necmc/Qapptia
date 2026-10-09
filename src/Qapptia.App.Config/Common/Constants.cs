@@ -10,7 +10,7 @@ public static class Constants
     public const string UpdateStatusChecking = "Comprobando actualizaciones con el servidor...";
     public const string UpdateStatusAvailableFormat = "¡Nueva versión v{0} disponible para descargar!";
     public const string UpdateStatusUpToDateFormat = "Tienes instalada la versión más reciente (v{0}).";
-    public const string UpdateStatusConnectError = "No se pudo conectar con el servidor de actualizaciones.";
+    public const string UpdateStatusConnectError = "No se pudo conectar con el servidor.";
     public const string UpdateStatusServerError = "Ocurrió un error al contactar el servidor.";
 
     // Textos de botones de actualización

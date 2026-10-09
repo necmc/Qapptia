@@ -35,6 +35,27 @@ public sealed class IpcServerHostedService : IHostedService, IDisposable
                     case ThemeChangedNotification themeMsg:
                         _logger.Information("Tema actualizado via IPC: {Theme}", themeMsg.Theme);
                         return new Ack { OriginalType = msg.Type };
+                    case UpdateAvailableNotification updateMsg:
+                        _logger.Information("Capture recibió notificación de actualización vía IPC: {Version}", updateMsg.Version);
+                        if (!string.IsNullOrWhiteSpace(updateMsg.Version))
+                        {
+                            Qapptia.Core.Services.InMemoryUpdateStateStore.SetUpdate(updateMsg.Version, updateMsg.DownloadUrl);
+                            await handler.HandleRefreshTrayAsync(ct);
+                        }
+                        return new Ack { OriginalType = msg.Type };
+                    case UpdateClearedNotification:
+                        _logger.Information("Capture recibió notificación de limpieza de actualización vía IPC.");
+                        Qapptia.Core.Services.InMemoryUpdateStateStore.Clear();
+                        await handler.HandleRefreshTrayAsync(ct);
+                        return new Ack { OriginalType = msg.Type };
+                    case QueryUpdateStateRequest:
+                        var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
+                        return new UpdateStateResponse
+                        {
+                            IsUpdateAvailable = state != null,
+                            Version = state?.Version,
+                            DownloadUrl = state?.DownloadUrl
+                        };
                     case Ping:
                         return new Pong { ServerPid = Environment.ProcessId };
                     default:

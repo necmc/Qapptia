@@ -87,6 +87,22 @@ public sealed class Program
                             });
                             return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });
 
+                        case UpdateAvailableNotification updateMsg:
+                            Log.Information("Editor recibió notificación de actualización disponible vía IPC: {Version}", updateMsg.Version);
+                            Dispatcher.UIThread.Post(() =>
+                            {
+                                InMemoryUpdateStateStore.SetUpdate(updateMsg.Version, updateMsg.DownloadUrl);
+                            });
+                            return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });
+
+                        case UpdateClearedNotification:
+                            Log.Information("Editor recibió notificación de limpieza de actualización vía IPC.");
+                            Dispatcher.UIThread.Post(() =>
+                            {
+                                InMemoryUpdateStateStore.Clear();
+                            });
+                            return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });
+
                         case Ping:
                             return Task.FromResult<IpcMessage>(IsEditorReady ? new Pong() : new Ack { OriginalType = msg.Type });
 
@@ -169,6 +185,9 @@ public sealed class Program
         services.AddSingleton<ICaptureAppService>(sp =>
             new Qapptia.App.Editor.Services.CaptureAppService(sp.GetRequiredService<Serilog.ILogger>()));
 
+        services.AddSingleton<IUpdateCheckService>(sp =>
+            new HttpUpdateCheckService(logger: sp.GetRequiredService<Serilog.ILogger>()));
+
         // ViewModel y Vistas
         services.AddTransient<EditorViewModel>(sp =>
         {
@@ -185,7 +204,8 @@ public sealed class Program
                 sp.GetRequiredService<INavigationService>(),
                 sp.GetRequiredService<ICanvasStateService>(),
                 sp.GetRequiredService<IShellService>(),
-                sp.GetRequiredService<ICaptureAppService>());
+                sp.GetRequiredService<ICaptureAppService>(),
+                sp.GetService<IUpdateCheckService>());
         });
 
         return services.BuildServiceProvider();

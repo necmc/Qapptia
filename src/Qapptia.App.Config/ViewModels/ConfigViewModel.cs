@@ -336,6 +336,16 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                         : Constants.DefaultDownloadUrl;
                     UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateAvailableFormat, result.LatestRelease.Version);
                     UpdateButtonText = ConfigConstants.UpdateButtonDownload;
+
+                    var version = result.LatestRelease.Version;
+                    var dlUrl = DownloadUrl;
+                    InMemoryUpdateStateStore.SetUpdate(version, dlUrl);
+
+                    BroadcastUpdateNotification(new UpdateAvailableNotification
+                    {
+                        Version = version,
+                        DownloadUrl = dlUrl
+                    });
                 }
                 else if (result.Status == UpdateCheckStatus.UpToDate)
                 {
@@ -343,6 +353,9 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                     DownloadUrl = null;
                     UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateUpToDateFormat, Constants.AppVersion);
                     UpdateButtonText = ConfigConstants.UpdateButtonCheck;
+
+                    InMemoryUpdateStateStore.Clear();
+                    BroadcastUpdateNotification(new UpdateClearedNotification());
                 }
                 else
                 {
@@ -350,6 +363,9 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                     DownloadUrl = null;
                     UpdateStatusMessage = result.ErrorMessage ?? ConfigConstants.UpdateStatusConnectError;
                     UpdateButtonText = ConfigConstants.UpdateButtonRetry;
+
+                    InMemoryUpdateStateStore.Clear();
+                    BroadcastUpdateNotification(new UpdateClearedNotification());
                 }
             });
         }
@@ -361,6 +377,9 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                 DownloadUrl = null;
                 UpdateStatusMessage = ConfigConstants.UpdateStatusServerError;
                 UpdateButtonText = ConfigConstants.UpdateButtonRetry;
+
+                InMemoryUpdateStateStore.Clear();
+                BroadcastUpdateNotification(new UpdateClearedNotification());
             });
             Serilog.Log.Error(ex, "Error comprobando actualizaciones desde Config");
         }
@@ -378,6 +397,36 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                 }
             });
         }
+    }
+
+    private static void BroadcastUpdateNotification(IpcMessage notification)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await QapptiaIpcClient.SendAsync(
+                    IpcChannels.Editor,
+                    notification,
+                    timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Si Editor no está en ejecución, se omite silenciosamente
+            }
+
+            try
+            {
+                await QapptiaIpcClient.SendAsync(
+                    IpcChannels.Capture,
+                    notification,
+                    timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Si Capture no está en ejecución, se omite silenciosamente
+            }
+        });
     }
 
     private void StartUpdateCooldown()

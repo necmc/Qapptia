@@ -14,6 +14,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Qapptia.App.Editor.ViewModels.Shapes;
 using Qapptia.Core.Abstractions;
+using Qapptia.Core.Ipc;
 using Qapptia.Core.Services;
 using IFontProvider = Qapptia.Editor.Core.IFontProvider;
 using Qapptia.App.Editor.Common;
@@ -28,12 +29,15 @@ namespace Qapptia.App.Editor.ViewModels;
 
 public partial class EditorViewModel : ObservableObject, IDisposable
 {
-    private static readonly IBrush s_captureActiveBrush = new SolidColorBrush(Color.Parse("#4CAF50"));
-    private static readonly IBrush s_captureInactiveBrush = new SolidColorBrush(Color.Parse("#E53935"));
+    private static readonly IBrush s_captureActiveBrush = new SolidColorBrush(Color.Parse("#4CAF50")).ToImmutable();
+    private static readonly IBrush s_captureInactiveBrush = new SolidColorBrush(Color.Parse("#E53935")).ToImmutable();
+    private static readonly System.Text.CompositeFormat s_updateToolTipFormat = System.Text.CompositeFormat.Parse(Qapptia.Core.Constants.ToolTipUpdateAvailableFormat);
 
     private readonly IClipboardService? _clipboardService;
     private readonly ICaptureAppService _captureAppService;
     private readonly IShellService _shellService;
+    private readonly IUpdateCheckService? _updateCheckService;
+    private readonly PeriodicUpdateCoordinator? _updateCoordinator;
     private readonly SponsorVisualInfo _sponsorVisual;
     private CancellationTokenSource? _toastCts;
 
@@ -52,6 +56,26 @@ public partial class EditorViewModel : ObservableObject, IDisposable
 
     public bool CanSponsor => !IsSponsorCooldown;
 
+    // --- Estado de actualización en memoria ---
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(InfoButtonToolTip))]
+    [NotifyPropertyChangedFor(nameof(InfoButtonIconKey))]
+    private bool _hasPendingUpdate;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(InfoButtonToolTip))]
+    private string? _pendingUpdateVersion;
+
+    [ObservableProperty]
+    private string? _pendingUpdateUrl;
+
+    public string InfoButtonToolTip => HasPendingUpdate && !string.IsNullOrWhiteSpace(PendingUpdateVersion)
+        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateToolTipFormat, PendingUpdateVersion)
+        : Qapptia.Core.Constants.ToolTipAbout;
+
+    public string InfoButtonIconKey => HasPendingUpdate ? Qapptia.Core.Constants.IconDownload : Qapptia.Core.Constants.IconInfo;
+
+    private long _lastUpdateDownloadTicks;
 
     public SidebarViewModel Sidebar { get; }
     public ToolbarViewModel Toolbar { get; }
@@ -106,9 +130,19 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         ICanvasStateService? canvasStateService = null,
         IShellService? shellService = null,
         ICaptureAppService? captureAppService = null,
-        Action<Action>? uiDispatcher = null)
+        IUpdateCheckService? updateCheckService = null,
+        TimeProvider? timeProvider = null,
+        Action<Action>? uiDispatcher = null,
+        bool queryIpcUpdateOnStartup = true)
     {
         _clipboardService = clipboardService;
+        _updateCheckService = updateCheckService;
+        if (_updateCheckService != null)
+        {
+            _updateCoordinator = new PeriodicUpdateCoordinator(_updateCheckService, timeProvider);
+            _updateCoordinator.CheckCompleted += OnCoordinatorCheckCompleted;
+        }
+
         _dispatcher = uiDispatcher ?? (action =>
         {
             try
@@ -138,6 +172,17 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         _isCaptureActive = _captureAppService.IsRunning;
         _captureAppService.StatusChanged += OnCaptureStatusChanged;
         _captureAppService.StartMonitoring(TimeSpan.FromSeconds(2.5));
+
+        InMemoryUpdateStateStore.StateChanged += OnUpdateStateChanged;
+        var currentUpdate = InMemoryUpdateStateStore.Current;
+        if (currentUpdate != null)
+        {
+            SetPendingUpdate(currentUpdate.Version, currentUpdate.DownloadUrl);
+        }
+        else if (queryIpcUpdateOnStartup)
+        {
+            InitializeUpdateChecking();
+        }
 
         Sidebar = new SidebarViewModel(navService, stateService, savePath, shell);
         Toolbar = new ToolbarViewModel(stateService);
@@ -498,6 +543,110 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    public void OpenAboutOrDownload()
+    {
+        if (HasPendingUpdate)
+        {
+            var now = Environment.TickCount64;
+            if (now - _lastUpdateDownloadTicks < Qapptia.Core.Constants.UpdateDownloadCooldownMs)
+            {
+                return;
+            }
+            _lastUpdateDownloadTicks = now;
+
+            var url = !string.IsNullOrWhiteSpace(PendingUpdateUrl) ? PendingUpdateUrl : Qapptia.Core.Constants.DefaultDownloadUrl;
+            _shellService.OpenUrl(url);
+            return;
+        }
+
+        OpenAbout();
+    }
+
+    private void OnUpdateStateChanged(UpdateStateInfo? info)
+    {
+        _dispatcher(() =>
+        {
+            if (info != null)
+            {
+                SetPendingUpdate(info.Version, info.DownloadUrl);
+            }
+            else
+            {
+                ClearPendingUpdate();
+            }
+        });
+    }
+
+    public void SetPendingUpdate(string version, string? downloadUrl)
+    {
+        PendingUpdateVersion = version;
+        PendingUpdateUrl = downloadUrl;
+        HasPendingUpdate = true;
+    }
+
+    public void ClearPendingUpdate()
+    {
+        HasPendingUpdate = false;
+        PendingUpdateVersion = null;
+        PendingUpdateUrl = null;
+    }
+
+    private void InitializeUpdateChecking()
+    {
+        _ = Task.Run(async () =>
+        {
+            bool captureResponded = false;
+            if (_captureAppService.IsRunning)
+            {
+                try
+                {
+                    var response = await QapptiaIpcClient.SendAsync(
+                        IpcChannels.Capture,
+                        new QueryUpdateStateRequest(),
+                        timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
+
+                    if (response is UpdateStateResponse updateResp)
+                    {
+                        captureResponded = true;
+                        if (updateResp.IsUpdateAvailable && !string.IsNullOrWhiteSpace(updateResp.Version))
+                        {
+                            _dispatcher(() =>
+                            {
+                                InMemoryUpdateStateStore.SetUpdate(updateResp.Version, updateResp.DownloadUrl);
+                            });
+                        }
+                    }
+                }
+                catch
+                {
+                    // Si falla el IPC a Capture, se intentará el relevo local
+                }
+            }
+
+            // Si Capture no está corriendo o no respondió: el Editor asume la responsabilidad transversal
+            if (!captureResponded && !_captureAppService.IsRunning && _updateCoordinator != null)
+            {
+                _updateCoordinator.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.StartupUpdateCheckDelayMs));
+            }
+        });
+    }
+
+    private void OnCoordinatorCheckCompleted(UpdateCheckResult result)
+    {
+        _dispatcher(() =>
+        {
+            if (result.Status == UpdateCheckStatus.UpdateAvailable && result.LatestRelease != null)
+            {
+                InMemoryUpdateStateStore.SetUpdate(result.LatestRelease.Version, result.LatestRelease.DownloadUrl);
+            }
+            else
+            {
+                InMemoryUpdateStateStore.Clear();
+            }
+        });
+    }
+
+    [RelayCommand]
     public void Sponsor()
     {
         if (!CanSponsor) return;
@@ -539,6 +688,17 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         {
             IsCaptureActive = isRunning;
         });
+
+        if (isRunning)
+        {
+            // Capture está activo: detenemos el coordinador local para evitar consultas duplicadas
+            _updateCoordinator?.Stop();
+        }
+        else
+        {
+            // Capture se cerró o se detuvo: el Editor asume el relevo autónomo de comprobaciones
+            _updateCoordinator?.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.StartupUpdateCheckDelayMs));
+        }
     }
 
     [RelayCommand]
@@ -601,8 +761,14 @@ public partial class EditorViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        InMemoryUpdateStateStore.StateChanged -= OnUpdateStateChanged;
         _captureAppService.StatusChanged -= OnCaptureStatusChanged;
         _captureAppService.Dispose();
+        if (_updateCoordinator != null)
+        {
+            _updateCoordinator.CheckCompleted -= OnCoordinatorCheckCompleted;
+            _updateCoordinator.Dispose();
+        }
         Board.Dispose();
         Sidebar.Dispose();
         _toastCts?.Dispose();

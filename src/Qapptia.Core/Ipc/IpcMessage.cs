@@ -86,6 +86,43 @@ public sealed class ThemeChangedNotification : IpcMessage
 }
 
 /// <summary>
+/// Notifica a otras instancias que existe una nueva versión disponible para descargar.
+/// </summary>
+public sealed class UpdateAvailableNotification : IpcMessage
+{
+    public override IpcMessageType Type => IpcMessageType.UpdateAvailable;
+    public string Version { get; set; } = string.Empty;
+    public string? DownloadUrl { get; set; }
+}
+
+/// <summary>
+/// Solicita a la instancia principal (Capture) el estado actual en memoria de actualizaciones.
+/// </summary>
+public sealed class QueryUpdateStateRequest : IpcMessage
+{
+    public override IpcMessageType Type => IpcMessageType.QueryUpdateState;
+}
+
+/// <summary>
+/// Respuesta que contiene el estado actual en memoria de actualizaciones.
+/// </summary>
+public sealed class UpdateStateResponse : IpcMessage
+{
+    public override IpcMessageType Type => IpcMessageType.UpdateStateResponse;
+    public bool IsUpdateAvailable { get; set; }
+    public string? Version { get; set; }
+    public string? DownloadUrl { get; set; }
+}
+
+/// <summary>
+/// Notifica a otras instancias que la última comprobación no detectó una actualización disponible o que el estado fue limpiado.
+/// </summary>
+public sealed class UpdateClearedNotification : IpcMessage
+{
+    public override IpcMessageType Type => IpcMessageType.UpdateCleared;
+}
+
+/// <summary>
 /// Enumera los tipos de mensaje del protocolo IPC de Qapptia.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<IpcMessageType>))]
@@ -99,4 +136,8 @@ public enum IpcMessageType
     Error = 6,
     Pong = 7,
     ThemeChanged = 8,
+    UpdateAvailable = 9,
+    QueryUpdateState = 10,
+    UpdateStateResponse = 11,
+    UpdateCleared = 12,
 }

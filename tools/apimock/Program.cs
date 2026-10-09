@@ -6,17 +6,23 @@ using Microsoft.AspNetCore.Http;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-string activeScenario = "update";
+string activeCase = "update";
 
 // 1. Verificación de versiones con despacho basado en archivos en scenarios/{case}.json
 app.MapGet("/api/version", (string? @case) =>
 {
-    var name = (@case ?? activeScenario).Trim().ToLowerInvariant();
+    var name = (@case ?? activeCase).Trim().ToLowerInvariant();
     var file = Path.Combine(app.Environment.ContentRootPath, "scenarios", $"{name}.json");
 
     if (!File.Exists(file))
     {
-        return Results.NotFound(new { error = $"Escenario '{name}' no existe en scenarios/." });
+        return Results.NotFound(new { error = $"Caso de prueba '{name}' no existe en scenarios/." });
+    }
+
+    // Persistir como caso activo global si se especificó explícitamente por query param
+    if (!string.IsNullOrWhiteSpace(@case))
+    {
+        activeCase = name;
     }
 
     try
@@ -45,11 +51,11 @@ app.MapGet("/api/version", (string? @case) =>
     }
     catch (JsonException ex)
     {
-        return Results.Problem($"El archivo de escenario '{name}.json' contiene JSON malformado: {ex.Message}");
+        return Results.Problem($"El archivo del caso '{name}.json' contiene JSON malformado: {ex.Message}");
     }
 });
 
-// Permite cambiar el escenario activo global para llamadas sin parámetros de Qapptia
+// Permite cambiar el caso activo global para llamadas sin parámetros de Qapptia
 app.MapPost("/api/version", (string @case) =>
 {
     var name = @case.Trim().ToLowerInvariant();
@@ -57,11 +63,11 @@ app.MapPost("/api/version", (string @case) =>
 
     if (!File.Exists(file))
     {
-        return Results.NotFound(new { error = $"Escenario '{name}' no existe en scenarios/." });
+        return Results.NotFound(new { error = $"Caso de prueba '{name}' no existe en scenarios/." });
     }
 
-    activeScenario = name;
-    return Results.Ok(new { message = $"Escenario activo cambiado a '{activeScenario}'." });
+    activeCase = name;
+    return Results.Ok(new { message = $"Caso activo cambiado a '{activeCase}'." });
 });
 
 // 2. Página web de descarga de actualizaciones (HTML básico)

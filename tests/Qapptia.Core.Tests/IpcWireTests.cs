@@ -54,7 +54,11 @@ public class IpcWireTests
             new Pong { ServerPid = 1234 },
             new Ack { OriginalType = IpcMessageType.ThemeChanged },
             new ErrorResponse { Reason = "Test reason" },
-            new ThemeChangedNotification { Theme = "dark" }
+            new ThemeChangedNotification { Theme = "dark" },
+            new UpdateAvailableNotification { Version = "1.2.0", DownloadUrl = "https://example.com" },
+            new QueryUpdateStateRequest(),
+            new UpdateStateResponse { IsUpdateAvailable = true, Version = "1.2.0", DownloadUrl = "https://example.com" },
+            new UpdateClearedNotification()
         ];
 
         foreach (var msg in messages)

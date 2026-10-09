@@ -24,7 +24,7 @@ public enum UpdateCheckStatus
 }
 
 /// <summary>
-/// DTO estructurado para la carga útil del endpoint remoto de versión.
+/// DTO estructurado para la respuesta del endpoint remoto de versión.
 /// Sigue las buenas prácticas de APIs RESTful con atributos en camelCase e inglés.
 /// </summary>
 public sealed class ReleaseInfoDto

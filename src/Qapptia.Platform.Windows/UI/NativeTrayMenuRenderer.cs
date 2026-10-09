@@ -39,6 +39,8 @@ public static class NativeTrayMenuRenderer
 
             foreach (var item in menuDefinition.Items)
             {
+                if (!item.IsVisible) continue;
+
                 if (item is TrayMenuSeparatorItem)
                 {
                     AppendMenu(hMenu, MF_SEPARATOR, UIntPtr.Zero, null);
@@ -94,8 +96,8 @@ public static class NativeTrayMenuRenderer
     {
         if (menuDefinition == null) return;
 
-        var defaultAction = menuDefinition.Items.OfType<TrayMenuActionItem>().FirstOrDefault(a => a.IsDefault)
-            ?? menuDefinition.Items.OfType<TrayMenuActionItem>().FirstOrDefault();
+        var defaultAction = menuDefinition.Items.OfType<TrayMenuActionItem>().Where(a => a.IsVisible).FirstOrDefault(a => a.IsDefault)
+            ?? menuDefinition.Items.OfType<TrayMenuActionItem>().FirstOrDefault(a => a.IsVisible);
 
         if (defaultAction != null)
         {

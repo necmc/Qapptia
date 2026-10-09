@@ -43,6 +43,71 @@
         <Style Selector="Button:not(.sponsor-button):pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
+        <!-- Estilo cuando hay una actualización disponible (Icono verde + Punto rojo + Micro-animaciones) -->
+        <Style Selector="Border.update-pending PathIcon">
+            <Setter Property="Foreground" Value="{DynamicResource M3UpdateAccentBrush}" />
+            <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+            <Style.Animations>
+                <Animation Duration="0:0:3.5" IterationCount="Infinite" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="RotateTransform.Angle" Value="0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="80%">
+                        <Setter Property="RotateTransform.Angle" Value="0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="84%">
+                        <Setter Property="RotateTransform.Angle" Value="-14.5" />
+                    </KeyFrame>
+                    <KeyFrame Cue="88%">
+                        <Setter Property="RotateTransform.Angle" Value="14.5" />
+                    </KeyFrame>
+                    <KeyFrame Cue="92%">
+                        <Setter Property="RotateTransform.Angle" Value="-8.5" />
+                    </KeyFrame>
+                    <KeyFrame Cue="96%">
+                        <Setter Property="RotateTransform.Angle" Value="8.5" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="RotateTransform.Angle" Value="0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="Border.update-pending:pointerover PathIcon">
+            <Style.Animations>
+                <Animation Duration="0:0:0.7" IterationCount="Infinite" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="TranslateTransform.Y" Value="0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="TranslateTransform.Y" Value="3.0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="TranslateTransform.Y" Value="0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <!-- Punto faro indicador de nueva versión -->
+        <Style Selector="Ellipse.beacon-dot">
+            <Setter Property="Fill" Value="{DynamicResource M3UpdateBeaconBrush}" />
+            <Setter Property="Stroke" Value="{DynamicResource M3SurfaceBrush}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+            <Style.Animations>
+                <Animation Duration="0:0:1.8" IterationCount="Infinite" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.65" />
+                    </KeyFrame>
+                    <KeyFrame Cue="50%">
+                        <Setter Property="Opacity" Value="1.0" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.65" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
     </UserControl.Styles>
     <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8">
         <Grid ColumnDefinitions="*, Auto">
@@ -364,10 +429,18 @@
                     </Button>
                 </Border>
 
-                <!-- Acerca de (solo icono a la derecha de Configuración) -->
-                <Border Background="{DynamicResource M3SurfaceVariantBrush}" CornerRadius="6" Padding="2" VerticalAlignment="Center">
-                    <Button Command="{Binding OpenAboutCommand}" ToolTip.Tip="Acerca de Qapptia" Background="Transparent" BorderBrush="Transparent" Padding="4" VerticalContentAlignment="Center">
-                        <PathIcon Data="{StaticResource IconInfo}" Width="16" Height="16" />
+                <!-- Acerca de / Descarga de actualización (solo icono a la derecha de Configuración) -->
+                <Border Classes.update-pending="{Binding HasPendingUpdate}"
+                        Background="{DynamicResource M3SurfaceVariantBrush}" CornerRadius="6" Padding="2" VerticalAlignment="Center">
+                    <Button Command="{Binding OpenAboutOrDownloadCommand}" ToolTip.Tip="{Binding InfoButtonToolTip}" Background="Transparent" BorderBrush="Transparent" Padding="4" VerticalContentAlignment="Center">
+                        <Panel Width="16" Height="16">
+                            <PathIcon Data="{Binding InfoButtonIconKey, Converter={StaticResource KeyToGeometryConverter}, FallbackValue={StaticResource IconInfo}, TargetNullValue={StaticResource IconInfo}}" Width="16" Height="16" />
+                            <Ellipse Classes="beacon-dot"
+                                     IsVisible="{Binding HasPendingUpdate}"
+                                     Width="6" Height="6"
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0" />
+                        </Panel>
                     </Button>
                 </Border>
             </StackPanel>

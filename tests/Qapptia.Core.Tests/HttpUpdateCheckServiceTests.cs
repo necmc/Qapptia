@@ -93,7 +93,7 @@ public class HttpUpdateCheckServiceTests
 
         Assert.Equal(UpdateCheckStatus.ConnectionFailed, result.Status);
         Assert.Null(result.LatestRelease);
-        Assert.False(string.IsNullOrWhiteSpace(result.ErrorMessage));
+        Assert.Equal("Servidor no disponible (500).", result.ErrorMessage);
     }
 
     [Fact]
@@ -111,5 +111,34 @@ public class HttpUpdateCheckServiceTests
         var result = await service.CheckForUpdatesAsync(ct: CancellationToken.None);
 
         Assert.Equal(UpdateCheckStatus.InvalidPayload, result.Status);
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsyncWhenTimeoutReturnsTimeoutErrorMessage()
+    {
+        using var handler = new MockHttpMessageHandler(_ => throw new TaskCanceledException());
+        using var httpClient = new HttpClient(handler);
+        using var service = new HttpUpdateCheckService(httpClient, currentVersion: "2.0.0");
+
+        var result = await service.CheckForUpdatesAsync(ct: CancellationToken.None);
+
+        Assert.Equal(UpdateCheckStatus.ConnectionFailed, result.Status);
+        Assert.Equal(Constants.UpdateErrorTimeout, result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CheckForUpdatesAsyncWhenUserCancelledReturnsCancelledErrorMessage()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        using var handler = new MockHttpMessageHandler(_ => throw new OperationCanceledException(cts.Token));
+        using var httpClient = new HttpClient(handler);
+        using var service = new HttpUpdateCheckService(httpClient, currentVersion: "2.0.0");
+
+        var result = await service.CheckForUpdatesAsync(ct: cts.Token);
+
+        Assert.Equal(UpdateCheckStatus.ConnectionFailed, result.Status);
+        Assert.Equal(Constants.UpdateErrorCheckCancelled, result.ErrorMessage);
     }
 }

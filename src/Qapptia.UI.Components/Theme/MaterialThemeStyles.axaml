@@ -42,6 +42,13 @@
             <SolidColorBrush x:Key="M3NeutralContainerBrush" Color="#DEE2E6" />
             <SolidColorBrush x:Key="M3OnNeutralContainerBrush" Color="#111827" />
             
+            <!-- Estado de actualizacion (Verde Esmeralda de alta visibilidad) -->
+            <SolidColorBrush x:Key="M3UpdateAccentBrush" Color="#047857" />
+            <SolidColorBrush x:Key="M3UpdateContainerBrush" Color="#D1FAE5" />
+            <SolidColorBrush x:Key="M3UpdateHoverContainerBrush" Color="#A7F3D0" />
+            <SolidColorBrush x:Key="M3UpdateBorderBrush" Color="#10B981" />
+            <SolidColorBrush x:Key="M3UpdateBeaconBrush" Color="#EF4444" />
+            
             <!-- Interaccion y controles -->
             <SolidColorBrush x:Key="M3HoverBrush" Color="#E0EDFF" />
             <SolidColorBrush x:Key="M3ControlBgBrush" Color="#FFFFFF" />
@@ -84,6 +91,13 @@
             <SolidColorBrush x:Key="M3NeutralContainerBrush" Color="#DEE2E6" />
             <SolidColorBrush x:Key="M3OnNeutralContainerBrush" Color="#111827" />
             
+            <!-- Estado de actualizacion (Verde Esmeralda de alta visibilidad) -->
+            <SolidColorBrush x:Key="M3UpdateAccentBrush" Color="#047857" />
+            <SolidColorBrush x:Key="M3UpdateContainerBrush" Color="#D1FAE5" />
+            <SolidColorBrush x:Key="M3UpdateHoverContainerBrush" Color="#A7F3D0" />
+            <SolidColorBrush x:Key="M3UpdateBorderBrush" Color="#10B981" />
+            <SolidColorBrush x:Key="M3UpdateBeaconBrush" Color="#EF4444" />
+            
             <!-- Interaccion y controles -->
             <SolidColorBrush x:Key="M3HoverBrush" Color="#E0EDFF" />
             <SolidColorBrush x:Key="M3ControlBgBrush" Color="#FFFFFF" />
@@ -125,6 +139,13 @@
             <SolidColorBrush x:Key="M3OnGrayContainerBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="M3NeutralContainerBrush" Color="#444850" />
             <SolidColorBrush x:Key="M3OnNeutralContainerBrush" Color="#FFFFFF" />
+            
+            <!-- Estado de actualizacion (Verde Esmeralda de alta visibilidad) -->
+            <SolidColorBrush x:Key="M3UpdateAccentBrush" Color="#10B981" />
+            <SolidColorBrush x:Key="M3UpdateContainerBrush" Color="#064E3B" />
+            <SolidColorBrush x:Key="M3UpdateHoverContainerBrush" Color="#065F46" />
+            <SolidColorBrush x:Key="M3UpdateBorderBrush" Color="#059669" />
+            <SolidColorBrush x:Key="M3UpdateBeaconBrush" Color="#F87171" />
             
             <!-- Interaccion y controles -->
             <SolidColorBrush x:Key="M3HoverBrush" Color="#2D333B" />

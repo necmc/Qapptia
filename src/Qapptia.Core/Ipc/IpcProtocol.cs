@@ -90,6 +90,10 @@ public sealed class IpcMessageJsonConverterFactory : JsonConverterFactory
                 IpcMessageType.Error => doc.RootElement.Deserialize(s_context.ErrorResponse),
                 IpcMessageType.Pong => doc.RootElement.Deserialize(s_context.Pong),
                 IpcMessageType.ThemeChanged => doc.RootElement.Deserialize(s_context.ThemeChangedNotification),
+                IpcMessageType.UpdateAvailable => doc.RootElement.Deserialize(s_context.UpdateAvailableNotification),
+                IpcMessageType.QueryUpdateState => doc.RootElement.Deserialize(s_context.QueryUpdateStateRequest),
+                IpcMessageType.UpdateStateResponse => doc.RootElement.Deserialize(s_context.UpdateStateResponse),
+                IpcMessageType.UpdateCleared => doc.RootElement.Deserialize(s_context.UpdateClearedNotification),
                 _ => throw new JsonException($"No hay tipo concreto para IpcMessageType {typeEnum}")
             };
         }
@@ -121,6 +125,18 @@ public sealed class IpcMessageJsonConverterFactory : JsonConverterFactory
                     break;
                 case ThemeChangedNotification req:
                     JsonSerializer.Serialize(writer, req, s_context.ThemeChangedNotification);
+                    break;
+                case UpdateAvailableNotification req:
+                    JsonSerializer.Serialize(writer, req, s_context.UpdateAvailableNotification);
+                    break;
+                case QueryUpdateStateRequest req:
+                    JsonSerializer.Serialize(writer, req, s_context.QueryUpdateStateRequest);
+                    break;
+                case UpdateStateResponse req:
+                    JsonSerializer.Serialize(writer, req, s_context.UpdateStateResponse);
+                    break;
+                case UpdateClearedNotification req:
+                    JsonSerializer.Serialize(writer, req, s_context.UpdateClearedNotification);
                     break;
                 default:
                     throw new JsonException($"Tipo de IpcMessage no soportado: {value?.GetType().FullName}");
