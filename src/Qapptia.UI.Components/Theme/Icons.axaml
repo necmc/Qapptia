@@ -45,6 +45,7 @@
     <!-- Widgets y Asistencia Contextual -->
     <StreamGeometry x:Key="IconDragHandle">M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z</StreamGeometry>
     <StreamGeometry x:Key="IconInfo">M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z</StreamGeometry>
+    <StreamGeometry x:Key="IconWarning">M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z</StreamGeometry>
     <StreamGeometry x:Key="IconSpinner">M 12 2 A 10 10 0 0 1 22 12 A 10 10 0 0 1 12 22 A 10 10 0 0 1 2 12 L 4.5 12 A 7.5 7.5 0 0 0 12 19.5 A 7.5 7.5 0 0 0 19.5 12 A 7.5 7.5 0 0 0 12 4.5 Z</StreamGeometry>
 
     <!-- ====================================================================

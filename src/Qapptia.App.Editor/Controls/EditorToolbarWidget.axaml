@@ -108,6 +108,11 @@
                 </Animation>
             </Style.Animations>
         </Style>
+        <!-- Mini indicador warning de captura inactiva -->
+        <Style Selector="PathIcon.warning-badge">
+            <Setter Property="Foreground" Value="{DynamicResource M3WarningBadgeBrush}" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
     </UserControl.Styles>
     <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8">
         <Grid ColumnDefinitions="*, Auto">
@@ -404,21 +409,23 @@
                     </StackPanel>
                 </Button>
 
-                <!-- Estado del Capturador en segundo plano (Fondo Verde/Rojo compacto) -->
+                <!-- Estado del Capturador en segundo plano (Icono Q sin fondo propio, con hover estándar e indicador warning si está inactivo) -->
                 <Border Background="{DynamicResource M3SurfaceVariantBrush}" CornerRadius="6" Padding="2" VerticalAlignment="Center">
                     <Button Command="{Binding LaunchOrWakeCaptureCommand}"
                             ToolTip.Tip="{Binding CaptureStatusToolTip}"
                             Background="Transparent"
                             BorderBrush="Transparent"
-                            Padding="2"
+                            Padding="4"
                             VerticalContentAlignment="Center">
-                        <Border Background="{Binding CaptureStatusBackgroundBrush}"
-                                CornerRadius="4"
-                                Padding="2"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
+                        <Panel Width="16" Height="16">
                             <Image Source="avares://Qapptia.App.Editor/Assets/tray_icon.png" Width="16" Height="16" />
-                        </Border>
+                            <PathIcon Classes="warning-badge"
+                                      Data="{StaticResource IconWarning}"
+                                      IsVisible="{Binding !IsCaptureActive}"
+                                      Width="9" Height="9"
+                                      HorizontalAlignment="Right" VerticalAlignment="Top"
+                                      Margin="0,-3,-3,0" />
+                        </Panel>
                     </Button>
                 </Border>
 

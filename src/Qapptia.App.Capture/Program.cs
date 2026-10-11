@@ -165,29 +165,6 @@ internal sealed class HeadlessCaptureApp : Application
             var shellService = AppHost?.Services.GetService<IShellService>();
 
             var menuDef = new TrayMenuDefinition();
-
-            long lastUpdateTicks = 0;
-            menuDef.Items.Add(new TrayMenuActionItem(
-                string.Empty,
-                () =>
-                {
-                    var now = Environment.TickCount64;
-                    if (now - lastUpdateTicks < Qapptia.Core.Constants.UpdateDownloadCooldownMs) return;
-                    lastUpdateTicks = now;
-                    var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
-                    var url = !string.IsNullOrWhiteSpace(state?.DownloadUrl) ? state.DownloadUrl : Qapptia.Core.Constants.DefaultDownloadUrl;
-                    shellService?.OpenUrl(url);
-                },
-                textProvider: () =>
-                {
-                    var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
-                    return state != null
-                        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, s_trayDownloadFormat, state.Version)
-                        : string.Empty;
-                },
-                isVisibleProvider: () => Qapptia.Core.Services.InMemoryUpdateStateStore.HasUpdate));
-            menuDef.Items.Add(new TrayMenuSeparatorItem(isVisibleProvider: () => Qapptia.Core.Services.InMemoryUpdateStateStore.HasUpdate));
-
             var config = AppHost?.Services.GetService<IConfigService>();
 
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuCaptureScreen, () => captureHandler?.HandleFullscreenCaptureAsync(CancellationToken.None), shortcutTextProvider: () => config?.Current.ShortcutScreen));
@@ -204,7 +181,32 @@ internal sealed class HeadlessCaptureApp : Application
                 lastSponsorTicks = now;
                 shellService?.OpenUrl(Qapptia.Core.Constants.DefaultSponsorUrl);
             }, textProvider: () => SponsorVisualHelper.GetRandomCombination().Text));
-            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuAbout, () => LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgAbout)));
+            long lastUpdateTicks = 0;
+            menuDef.Items.Add(new TrayMenuActionItem(
+                CaptureConstants.TrayMenuAbout,
+                () =>
+                {
+                    if (Qapptia.Core.Services.InMemoryUpdateStateStore.HasUpdate)
+                    {
+                        var now = Environment.TickCount64;
+                        if (now - lastUpdateTicks < Qapptia.Core.Constants.UpdateDownloadCooldownMs) return;
+                        lastUpdateTicks = now;
+                        var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
+                        var url = !string.IsNullOrWhiteSpace(state?.DownloadUrl) ? state.DownloadUrl : Qapptia.Core.Constants.DefaultDownloadUrl;
+                        shellService?.OpenUrl(url);
+                    }
+                    else
+                    {
+                        LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgAbout);
+                    }
+                },
+                textProvider: () =>
+                {
+                    var state = Qapptia.Core.Services.InMemoryUpdateStateStore.Current;
+                    return (Qapptia.Core.Services.InMemoryUpdateStateStore.HasUpdate && state != null)
+                        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, s_trayDownloadFormat, state.Version)
+                        : CaptureConstants.TrayMenuAbout;
+                }));
             menuDef.Items.Add(new TrayMenuSeparatorItem());
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuRestart, () =>
             {

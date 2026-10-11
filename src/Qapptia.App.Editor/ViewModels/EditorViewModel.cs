@@ -29,8 +29,6 @@ namespace Qapptia.App.Editor.ViewModels;
 
 public partial class EditorViewModel : ObservableObject, IDisposable
 {
-    private static readonly IBrush s_captureActiveBrush = new SolidColorBrush(Color.Parse("#4CAF50")).ToImmutable();
-    private static readonly IBrush s_captureInactiveBrush = new SolidColorBrush(Color.Parse("#E53935")).ToImmutable();
     private static readonly System.Text.CompositeFormat s_updateToolTipFormat = System.Text.CompositeFormat.Parse(Qapptia.Core.Constants.ToolTipUpdateAvailableFormat);
 
     private readonly IClipboardService? _clipboardService;
@@ -86,14 +84,10 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isCaptureActive;
 
-    public IBrush CaptureStatusBorderBrush => IsCaptureActive ? s_captureActiveBrush : s_captureInactiveBrush;
-    public IBrush CaptureStatusBackgroundBrush => IsCaptureActive ? s_captureActiveBrush : s_captureInactiveBrush;
     public string CaptureStatusToolTip => IsCaptureActive ? Constants.ToolTipCaptureActive : Constants.ToolTipCaptureInactive;
 
     partial void OnIsCaptureActiveChanged(bool value)
     {
-        OnPropertyChanged(nameof(CaptureStatusBorderBrush));
-        OnPropertyChanged(nameof(CaptureStatusBackgroundBrush));
         OnPropertyChanged(nameof(CaptureStatusToolTip));
     }
 

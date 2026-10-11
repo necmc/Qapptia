@@ -56,7 +56,7 @@ public sealed class EditorViewModelCaptureTests : IDisposable
     }
 
     [Fact]
-    public void EditorViewModelWhenCaptureIsActiveReflectsGreenBorderAndActiveTooltip()
+    public void EditorViewModelWhenCaptureIsActiveReflectsActiveTooltip()
     {
         var captureMock = new Mock<ICaptureAppService>();
         captureMock.SetupGet(c => c.IsRunning).Returns(true);
@@ -67,19 +67,11 @@ public sealed class EditorViewModelCaptureTests : IDisposable
         vm.CaptureStatusToolTip.Should().Be(EditorConstants.ToolTipCaptureActive);
         vm.CaptureStatusToolTip.Should().Be("Capturador activo en segundo plano");
 
-        var borderBrush = vm.CaptureStatusBorderBrush as ISolidColorBrush;
-        borderBrush.Should().NotBeNull();
-        borderBrush!.Color.Should().Be(Color.Parse("#4CAF50"));
-
-        var bgBrush = vm.CaptureStatusBackgroundBrush as ISolidColorBrush;
-        bgBrush.Should().NotBeNull();
-        bgBrush!.Color.Should().Be(Color.Parse("#4CAF50"));
-
         captureMock.Verify(c => c.StartMonitoring(It.Is<TimeSpan>(t => t.TotalSeconds >= 2 && t.TotalSeconds <= 3)), Times.Once);
     }
 
     [Fact]
-    public void EditorViewModelWhenCaptureIsInactiveReflectsRedBorderAndInactiveTooltip()
+    public void EditorViewModelWhenCaptureIsInactiveReflectsInactiveTooltip()
     {
         var captureMock = new Mock<ICaptureAppService>();
         captureMock.SetupGet(c => c.IsRunning).Returns(false);
@@ -89,14 +81,6 @@ public sealed class EditorViewModelCaptureTests : IDisposable
         vm.IsCaptureActive.Should().BeFalse();
         vm.CaptureStatusToolTip.Should().Be(EditorConstants.ToolTipCaptureInactive);
         vm.CaptureStatusToolTip.Should().Be("Capturador inactivo (clic para iniciar)");
-
-        var borderBrush = vm.CaptureStatusBorderBrush as ISolidColorBrush;
-        borderBrush.Should().NotBeNull();
-        borderBrush!.Color.Should().Be(Color.Parse("#E53935"));
-
-        var bgBrush = vm.CaptureStatusBackgroundBrush as ISolidColorBrush;
-        bgBrush.Should().NotBeNull();
-        bgBrush!.Color.Should().Be(Color.Parse("#E53935"));
     }
 
     [Fact]

@@ -48,6 +48,7 @@
             <SolidColorBrush x:Key="M3UpdateHoverContainerBrush" Color="#A7F3D0" />
             <SolidColorBrush x:Key="M3UpdateBorderBrush" Color="#10B981" />
             <SolidColorBrush x:Key="M3UpdateBeaconBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="M3WarningBadgeBrush" Color="#F59E0B" />
             
             <!-- Interaccion y controles -->
             <SolidColorBrush x:Key="M3HoverBrush" Color="#E0EDFF" />
@@ -97,6 +98,7 @@
             <SolidColorBrush x:Key="M3UpdateHoverContainerBrush" Color="#A7F3D0" />
             <SolidColorBrush x:Key="M3UpdateBorderBrush" Color="#10B981" />
             <SolidColorBrush x:Key="M3UpdateBeaconBrush" Color="#EF4444" />
+            <SolidColorBrush x:Key="M3WarningBadgeBrush" Color="#F59E0B" />
             
             <!-- Interaccion y controles -->
             <SolidColorBrush x:Key="M3HoverBrush" Color="#E0EDFF" />
@@ -146,6 +148,7 @@
             <SolidColorBrush x:Key="M3UpdateHoverContainerBrush" Color="#065F46" />
             <SolidColorBrush x:Key="M3UpdateBorderBrush" Color="#059669" />
             <SolidColorBrush x:Key="M3UpdateBeaconBrush" Color="#F87171" />
+            <SolidColorBrush x:Key="M3WarningBadgeBrush" Color="#FBBF24" />
             
             <!-- Interaccion y controles -->
             <SolidColorBrush x:Key="M3HoverBrush" Color="#2D333B" />
