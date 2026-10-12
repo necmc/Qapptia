@@ -1,18 +1,21 @@
 using System.Threading.Tasks;
 using Avalonia.Controls;
 using Qapptia.App.Config.ViewModels;
+using Qapptia.Core.Configuration;
 
 namespace Qapptia.App.Config;
 
 public partial class MainWindow : Window
 {
-    public MainWindow() : this(false) { }
+    public MainWindow() : this(false, null) { }
 
-    public MainWindow(bool startInAboutTab)
+    public MainWindow(bool startInAboutTab, JsonConfigService? configService = null)
     {
         InitializeComponent();
 
-        var vm = new ConfigViewModel(startInAboutTab: startInAboutTab);
+        var vm = new ConfigViewModel(
+            configService: configService,
+            startInAboutTab: startInAboutTab);
         vm.RequestClose = Close;
         vm.RequestBrowsePath = ShowFolderDialogAsync;
 

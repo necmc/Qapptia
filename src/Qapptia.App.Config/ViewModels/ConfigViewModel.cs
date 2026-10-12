@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Qapptia.Core;
@@ -137,13 +138,13 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     public Func<Task<string?>>? RequestBrowsePath { get; set; }
 
     public ConfigViewModel(
+        JsonConfigService? configService = null,
         IUpdateCheckService? updateCheckService = null,
         IShellService? shellService = null,
         IAutoStartService? autoStartService = null,
         bool startInAboutTab = false)
     {
-        var configPath = Qapptia.Core.Constants.DefaultConfigPath;
-        _configService = new JsonConfigService(configPath);
+        _configService = configService ?? new JsonConfigService(Qapptia.Core.Constants.DefaultConfigPath);
         _config = _configService.Current;
 
 #if WINDOWS
@@ -168,7 +169,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
 
     private void LoadFromConfig()
     {
-        AutoStart = _autoStartService.IsSupported ? _autoStartService.IsAutoStartEnabled() : _config.AutoStart;
+        AutoStart = _config.AutoStart;
         SelectedTheme = ThemeConstants.ToDisplayName(_config.Theme);
         SavePath = _config.SavePath;
         FilenameFormat = _config.FilenameFormat;
@@ -183,6 +184,18 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         CopyToClipboardScreen = _config.CopyToClipboardScreen;
         CopyToClipboardArea = _config.CopyToClipboardArea;
         CaptureAllScreens = _config.CaptureAllScreens;
+
+        if (_autoStartService.IsSupported)
+        {
+            _ = Task.Run(() =>
+            {
+                var isEnabled = _autoStartService.IsAutoStartEnabled();
+                Dispatcher.UIThread.Post(() =>
+                {
+                    AutoStart = isEnabled;
+                });
+            });
+        }
     }
 
     [RelayCommand]
