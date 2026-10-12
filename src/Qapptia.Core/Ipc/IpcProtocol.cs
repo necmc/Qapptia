@@ -94,6 +94,7 @@ public sealed class IpcMessageJsonConverterFactory : JsonConverterFactory
                 IpcMessageType.QueryUpdateState => doc.RootElement.Deserialize(s_context.QueryUpdateStateRequest),
                 IpcMessageType.UpdateStateResponse => doc.RootElement.Deserialize(s_context.UpdateStateResponse),
                 IpcMessageType.UpdateCleared => doc.RootElement.Deserialize(s_context.UpdateClearedNotification),
+                IpcMessageType.ShowHelp => doc.RootElement.Deserialize(s_context.ShowHelpRequest),
                 _ => throw new JsonException($"No hay tipo concreto para IpcMessageType {typeEnum}")
             };
         }
@@ -137,6 +138,9 @@ public sealed class IpcMessageJsonConverterFactory : JsonConverterFactory
                     break;
                 case UpdateClearedNotification req:
                     JsonSerializer.Serialize(writer, req, s_context.UpdateClearedNotification);
+                    break;
+                case ShowHelpRequest req:
+                    JsonSerializer.Serialize(writer, req, s_context.ShowHelpRequest);
                     break;
                 default:
                     throw new JsonException($"Tipo de IpcMessage no soportado: {value?.GetType().FullName}");

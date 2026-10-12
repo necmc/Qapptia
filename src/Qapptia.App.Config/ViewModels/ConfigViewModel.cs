@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
@@ -483,6 +484,46 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         else
         {
             await CheckUpdatesAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenEditorHelpAsync()
+    {
+        try
+        {
+            var response = await QapptiaIpcClient.SendAsync(
+                IpcChannels.Editor,
+                new ShowHelpRequest(),
+                timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
+
+            if (response is Ack)
+            {
+                return;
+            }
+        }
+        catch
+        {
+            // Fallback si el Editor no está abierto o no responde a tiempo
+        }
+
+        try
+        {
+            var exeName = Constants.EditorExecutableName;
+            var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeName);
+            if (File.Exists(exePath))
+            {
+                Process.Start(new ProcessStartInfo(exePath, Constants.ArgHelp) { UseShellExecute = true });
+            }
+            else
+            {
+                ShowFooter(Constants.EditorAppName + " no encontrado", isError: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Serilog.Log.Error(ex, "Error al lanzar el Editor con argumento de ayuda desde Configuración.");
+            ShowFooter("Error al abrir la guía del Editor", isError: true);
         }
     }
 

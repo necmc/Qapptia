@@ -14,6 +14,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Qapptia.App.Editor.ViewModels.Shapes;
 using Qapptia.Core.Abstractions;
+using Qapptia.Core.Configuration;
 using Qapptia.Core.Ipc;
 using Qapptia.Core.Services;
 using IFontProvider = Qapptia.Editor.Core.IFontProvider;
@@ -37,7 +38,11 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     private readonly IUpdateCheckService? _updateCheckService;
     private readonly PeriodicUpdateCoordinator? _updateCoordinator;
     private readonly SponsorVisualInfo _sponsorVisual;
+    private readonly IConfigService? _configService;
     private CancellationTokenSource? _toastCts;
+
+    public EditorHelpViewModel Help { get; }
+    public bool ShouldShowHelpOnStartup => _configService?.Current.ShowEditorHelpOnStartup ?? true;
 
     public string SponsorText => _sponsorVisual.Text;
     public string SponsorIconKey => _sponsorVisual.IconKey;
@@ -127,8 +132,12 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         IUpdateCheckService? updateCheckService = null,
         TimeProvider? timeProvider = null,
         Action<Action>? uiDispatcher = null,
-        bool queryIpcUpdateOnStartup = true)
+        bool queryIpcUpdateOnStartup = true,
+        IConfigService? configService = null,
+        EditorHelpViewModel? helpViewModel = null)
     {
+        _configService = configService;
+        Help = helpViewModel ?? new EditorHelpViewModel(configService ?? new DefaultFallbackConfigService());
         _clipboardService = clipboardService;
         _updateCheckService = updateCheckService;
         if (_updateCheckService != null)
@@ -537,6 +546,16 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    public void OpenHelp()
+    {
+        if (IsEditingText)
+        {
+            CommitCurrentState();
+        }
+        Help.Open();
+    }
+
+    [RelayCommand]
     public void OpenAboutOrDownload()
     {
         if (HasPendingUpdate)
@@ -768,5 +787,12 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         _toastCts?.Dispose();
         _toastCts = null;
         GC.SuppressFinalize(this);
+    }
+
+    private sealed class DefaultFallbackConfigService : IConfigService
+    {
+        public Qapptia.Core.Configuration.QapptiaConfig Current { get; } = new();
+        public void Save() { }
+        public void Reload() { }
     }
 }

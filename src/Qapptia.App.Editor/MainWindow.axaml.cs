@@ -58,6 +58,15 @@ public partial class MainWindow : Window
             }
         };
 
+        this.KeyDown += (s, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Escape && DataContext is EditorViewModel currentVm && currentVm.Help.IsVisible)
+            {
+                currentVm.Help.CloseCommand.Execute(null);
+                e.Handled = true;
+            }
+        };
+
         this.Loaded += (s, e) =>
         {
             if (DataContext is EditorViewModel currentVm && currentVm.SelectedNode == null && !string.IsNullOrEmpty(currentVm.Sidebar.ActiveFilePath))
@@ -114,6 +123,11 @@ public partial class MainWindow : Window
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             vm.LoadSidebarImagesCommand.Execute(null);
+
+            if (Program.StartWithHelpRequested || vm.ShouldShowHelpOnStartup)
+            {
+                vm.OpenHelpCommand.Execute(null);
+            }
         }, Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
@@ -183,6 +197,12 @@ public partial class MainWindow : Window
         {
             Gesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.Delete),
             Command = vm.DeleteSelectedCommand
+        });
+
+        this.KeyBindings.Add(new Avalonia.Input.KeyBinding
+        {
+            Gesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.F1),
+            Command = vm.OpenHelpCommand
         });
     }
 

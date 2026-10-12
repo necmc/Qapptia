@@ -113,6 +113,13 @@
             <Setter Property="Foreground" Value="{DynamicResource M3WarningBadgeBrush}" />
             <Setter Property="IsHitTestVisible" Value="False" />
         </Style>
+        <!-- Mini indicador verde de captura activa -->
+        <Style Selector="Ellipse.capture-active-dot">
+            <Setter Property="Fill" Value="#4CAF50" />
+            <Setter Property="Stroke" Value="{DynamicResource M3SurfaceBrush}" />
+            <Setter Property="StrokeThickness" Value="1" />
+            <Setter Property="IsHitTestVisible" Value="False" />
+        </Style>
     </UserControl.Styles>
     <Border Background="{DynamicResource M3SurfaceContainerBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="8">
         <Grid ColumnDefinitions="*, Auto">
@@ -348,8 +355,8 @@
                     <RadioButton Theme="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding IsTextToolActive, Mode=OneWay}" Command="{Binding SelectToolCommand}" CommandParameter="Text" GroupName="Tools" Background="Transparent" ToolTip.Tip="Texto" Padding="4">
                         <PathIcon Data="{StaticResource IconText}" Width="16" Height="16"/>
                     </RadioButton>
-                    <!-- Borrador Inteligente -->
-                    <RadioButton Theme="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding IsSmartEraserToolActive, Mode=OneWay}" Command="{Binding SelectToolCommand}" CommandParameter="SmartEraser" GroupName="Tools" Background="Transparent" ToolTip.Tip="Borrador inteligente" Padding="4">
+                    <!-- Borrador Adaptativo -->
+                    <RadioButton Theme="{StaticResource {x:Type ToggleButton}}" IsChecked="{Binding IsSmartEraserToolActive, Mode=OneWay}" Command="{Binding SelectToolCommand}" CommandParameter="SmartEraser" GroupName="Tools" Background="Transparent" ToolTip.Tip="Borrador adaptativo" Padding="4">
                         <PathIcon Data="{StaticResource IconSmartEraser}" Width="16" Height="16"/>
                     </RadioButton>
                 </StackPanel>
@@ -422,9 +429,14 @@
                             <PathIcon Classes="warning-badge"
                                       Data="{StaticResource IconWarning}"
                                       IsVisible="{Binding !IsCaptureActive}"
-                                      Width="9" Height="9"
+                                      Width="11" Height="11"
                                       HorizontalAlignment="Right" VerticalAlignment="Top"
                                       Margin="0,-3,-3,0" />
+                            <Ellipse Classes="capture-active-dot"
+                                     IsVisible="{Binding IsCaptureActive}"
+                                     Width="8" Height="8"
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0" />
                         </Panel>
                     </Button>
                 </Border>

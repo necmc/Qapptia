@@ -123,6 +123,14 @@ public sealed class UpdateClearedNotification : IpcMessage
 }
 
 /// <summary>
+/// Solicita al Editor que muestre la guía de uso y atajos de teclado.
+/// </summary>
+public sealed class ShowHelpRequest : IpcMessage
+{
+    public override IpcMessageType Type => IpcMessageType.ShowHelp;
+}
+
+/// <summary>
 /// Enumera los tipos de mensaje del protocolo IPC de Qapptia.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<IpcMessageType>))]
@@ -140,4 +148,5 @@ public enum IpcMessageType
     QueryUpdateState = 10,
     UpdateStateResponse = 11,
     UpdateCleared = 12,
+    ShowHelp = 13,
 }

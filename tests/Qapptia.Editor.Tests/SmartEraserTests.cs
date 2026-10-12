@@ -19,7 +19,7 @@ public class SmartEraserTests
     {
         var tool = ShapeFactory.SmartEraser;
         Assert.Equal("SmartEraser", tool.Id);
-        Assert.Equal("Borrador inteligente", tool.DisplayName);
+        Assert.Equal("Borrador adaptativo", tool.DisplayName);
         Assert.Equal("W", tool.Shortcut);
         Assert.Equal(ToolType.Vector, tool.Type);
         Assert.Equal(StandardCursorType.Cross, tool.DefaultCursor);

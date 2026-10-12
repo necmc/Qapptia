@@ -30,6 +30,7 @@ public sealed class Program
 {
     public static IServiceProvider? Services { get; private set; }
     public static bool IsEditorReady { get; set; }
+    public static bool StartWithHelpRequested { get; set; }
 
     [STAThread]
     public static void Main(string[] args)
@@ -42,6 +43,9 @@ public sealed class Program
 #endif
         using var log = Qapptia.Core.Logging.LoggingBootstrap.ConfigureGlobal(logDir, logLevel, "editor");
 
+        bool hasHelpArg = Array.Exists(args, a => string.Equals(a, Qapptia.Core.Constants.ArgHelp, StringComparison.OrdinalIgnoreCase));
+        StartWithHelpRequested = hasHelpArg;
+
         try
         {
             using var guard = new MutexSingleInstanceGuard(IpcChannels.Editor);
@@ -50,11 +54,12 @@ public sealed class Program
                 Log.Warning("Instancia de Editor ya existente, intentando despertar...");
                 try
                 {
-                    QapptiaIpcClient.SendAsync(IpcChannels.Editor, new WakeUpRequest(), timeoutMs: 1000).GetAwaiter().GetResult();
+                    IpcMessage req = hasHelpArg ? new ShowHelpRequest() : new WakeUpRequest();
+                    QapptiaIpcClient.SendAsync(IpcChannels.Editor, req, timeoutMs: 1000).GetAwaiter().GetResult();
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning(ex, "No se pudo despertar la otra instancia de Editor");
+                    Log.Warning(ex, "No se pudo comunicar con la otra instancia de Editor");
                 }
                 return;
             }
@@ -75,6 +80,26 @@ public sealed class Program
                                     desktop.MainWindow.Activate();
                                     desktop.MainWindow.Topmost = true;
                                     desktop.MainWindow.Topmost = false;
+                                }
+                            });
+                            return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });
+
+                        case ShowHelpRequest:
+                            Dispatcher.UIThread.Post(() =>
+                            {
+                                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+                                    desktop.MainWindow != null)
+                                {
+                                    desktop.MainWindow.Show();
+                                    desktop.MainWindow.WindowState = Avalonia.Controls.WindowState.Normal;
+                                    desktop.MainWindow.Activate();
+                                    desktop.MainWindow.Topmost = true;
+                                    desktop.MainWindow.Topmost = false;
+
+                                    if (desktop.MainWindow.DataContext is EditorViewModel vm)
+                                    {
+                                        vm.OpenHelpCommand.Execute(null);
+                                    }
                                 }
                             });
                             return Task.FromResult<IpcMessage>(new Ack { OriginalType = msg.Type });
@@ -205,7 +230,8 @@ public sealed class Program
                 sp.GetRequiredService<ICanvasStateService>(),
                 sp.GetRequiredService<IShellService>(),
                 sp.GetRequiredService<ICaptureAppService>(),
-                sp.GetService<IUpdateCheckService>());
+                sp.GetService<IUpdateCheckService>(),
+                configService: config);
         });
 
         return services.BuildServiceProvider();

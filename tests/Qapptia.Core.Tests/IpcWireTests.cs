@@ -58,7 +58,8 @@ public class IpcWireTests
             new UpdateAvailableNotification { Version = "1.2.0", DownloadUrl = "https://example.com" },
             new QueryUpdateStateRequest(),
             new UpdateStateResponse { IsUpdateAvailable = true, Version = "1.2.0", DownloadUrl = "https://example.com" },
-            new UpdateClearedNotification()
+            new UpdateClearedNotification(),
+            new ShowHelpRequest()
         ];
 
         foreach (var msg in messages)

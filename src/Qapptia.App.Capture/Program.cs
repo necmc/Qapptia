@@ -217,7 +217,7 @@ internal sealed class HeadlessCaptureApp : Application
                 }
                 try { trayService?.Dispose(); } catch { }
                 desktop.Shutdown();
-            }));
+            }, isVisibleProvider: () => false));
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuExit, () =>
             {
                 try { trayService?.Dispose(); } catch { }

@@ -8,10 +8,14 @@ public static class Constants
 {
     public const string AppName = "Qapptia";
     public const string AppVersion = "2.0.0-beta";
-    public const string AppDescription = "Herramienta de captura de pantalla, recortes y anotaciones. Mantiene un enfoque en la agilidad para documentar evidencias en el proceso de Pruebas de Software (QA) y practicidad para propósitos generales.";
+    public const string AppDescription = "Herramienta de captura de pantalla, recortes y anotaciones. Mantiene un enfoque en la agilidad para documentar evidencias en el proceso de pruebas de software (QA) y practicidad para propósitos generales.";
     public const string AboutSupportHeader = "Apoyar el proyecto";
     public const string AboutSupportDescription = "Este es un proyecto libre e independiente. Tu apoyo impulsa la creación de nuevas características y su desarrollo continuo.";
     public const string AboutUpdatesHeader = "Actualizaciones de software";
+    public const string AboutHelpHeader = "Guía del Editor";
+    public const string AboutHelpDescription = "Accede a la guía visual y manual rápido de herramientas, funciones del Capturador y opciones del Editor.";
+    public const string AboutHelpButtonText = "Ver guía del Editor";
+    public const string AboutHelpToolTip = "Abrir la guía de uso del Editor (F1)";
     public const string ConfigFileName = "config.json";
     public const string EditorStateFileName = "editor_state.json";
     public const string ShortcutCopyClipboard = "Ctrl+C";
@@ -80,6 +84,7 @@ public static class Constants
     public const string ArgCapture = "--capture";
     public const string ArgRestart = "--restart";
     public const string ArgAbout = "--about";
+    public const string ArgHelp = "--help";
 
     // URLs de servicios web, descargas y apoyo al proyecto
     public const string DefaultSponsorUrl = "https://localhost:8080/sponsor";

@@ -20,11 +20,9 @@ namespace Qapptia.Editor.Tests;
 
 public class FreehandLineShapeTests
 {
-    public static readonly HeadlessUnitTestSession Session = HeadlessUnitTestSession.StartNew(typeof(FreehandLineShapeTests));
+    public static HeadlessUnitTestSession Session => Qapptia.Editor.Tests.Helpers.SharedHeadlessSession.Session;
 
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<Qapptia.App.Editor.App>()
-            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true });
+    public static AppBuilder BuildAvaloniaApp() => Qapptia.Editor.Tests.Helpers.SharedHeadlessSession.BuildAvaloniaApp();
 
     [Fact]
     public void HitTestAndBodyTranslationRespectsEndsOnlyHandlesAndMovesStroke()

@@ -75,7 +75,7 @@ public partial class ToolbarViewModel : ObservableObject
             new ToolGroup("Rectangle", "Rectángulo", new[] { ShapeFactory.Rectangle }),
             new ToolGroup("Highlighter", "Resaltador", new[] { ShapeFactory.Highlighter }),
             new ToolGroup("Text", "Texto", new[] { ShapeFactory.Text }),
-            new ToolGroup("SmartEraser", "Borrador inteligente", new[] { ShapeFactory.SmartEraser })
+            new ToolGroup("SmartEraser", "Borrador adaptativo", new[] { ShapeFactory.SmartEraser })
         };
 
         var state = _stateService.Load();

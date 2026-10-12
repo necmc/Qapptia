@@ -286,5 +286,12 @@
             </DockPanel>
         </Border>
 
+        <!-- Modal Overlay de Ayuda e Interacción Desacoplada -->
+        <controls:EditorHelpOverlayWidget DataContext="{Binding Help}" 
+                                          IsVisible="{Binding IsVisible}" 
+                                          Grid.Row="0" 
+                                          Grid.RowSpan="3" 
+                                          ZIndex="1000" />
+
     </Grid>
 </Window>

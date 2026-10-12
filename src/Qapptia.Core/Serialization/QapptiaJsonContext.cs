@@ -28,6 +28,7 @@ namespace Qapptia.Core.Serialization;
 [JsonSerializable(typeof(QueryUpdateStateRequest))]
 [JsonSerializable(typeof(UpdateStateResponse))]
 [JsonSerializable(typeof(UpdateClearedNotification))]
+[JsonSerializable(typeof(ShowHelpRequest))]
 [JsonSerializable(typeof(IpcMessageType))]
 public partial class QapptiaJsonContext : JsonSerializerContext
 {

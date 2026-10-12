@@ -25,7 +25,7 @@ namespace Qapptia.Editor.Tests.ViewModels;
 
 public class SidebarVisualTests
 {
-    public static readonly HeadlessUnitTestSession Session = HeadlessUnitTestSession.StartNew(typeof(SidebarVisualTests));
+    public static HeadlessUnitTestSession Session => Qapptia.Editor.Tests.Helpers.SharedHeadlessSession.Session;
 
     private static readonly byte[] s_minimalPng =
     [
@@ -34,9 +34,7 @@ public class SidebarVisualTests
         0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
     ];
 
-    public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<Qapptia.App.Editor.App>()
-            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = true });
+    public static AppBuilder BuildAvaloniaApp() => Qapptia.Editor.Tests.Helpers.SharedHeadlessSession.BuildAvaloniaApp();
 
     [Fact]
     public async Task FlatTreeMassiveInjectionShouldMaintainResponsiveRendering()

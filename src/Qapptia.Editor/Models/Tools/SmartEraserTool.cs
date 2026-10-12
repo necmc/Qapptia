@@ -13,7 +13,7 @@ namespace Qapptia.Editor.Tools;
 public sealed class SmartEraserTool : VectorTool<SmartEraserGeometry>
 {
     public override string Id => "SmartEraser";
-    public override string DisplayName => "Borrador inteligente";
+    public override string DisplayName => "Borrador adaptativo";
     public override string? Shortcut => "W";
     public override bool SupportsColor => false;
 
