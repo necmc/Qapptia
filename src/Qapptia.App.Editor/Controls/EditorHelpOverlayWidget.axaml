@@ -72,6 +72,22 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextAlignment" Value="Center" />
         </Style>
+
+        <!-- Acento sutil para el Bloque de Apoyo (Sponsor) -->
+        <Style Selector="Border.coach-card.coach-card-sponsor">
+            <Setter Property="BorderBrush" Value="#D97706" />
+        </Style>
+        <Style Selector="Border.mini-card-sponsor">
+            <Setter Property="BorderBrush" Value="#40D97706" />
+        </Style>
+        <Style Selector="Border.icon-badge-sponsor">
+            <Setter Property="Background" Value="#FDE68A" />
+            <Setter Property="BorderBrush" Value="#D97706" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Width" Value="34" />
+            <Setter Property="Height" Value="34" />
+        </Style>
     </UserControl.Styles>
 
     <!-- Fondo Translúcido Modal (Backdrop) que captura clics exteriores -->
@@ -97,7 +113,7 @@
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                     <TextBlock Text="Cómo lanzar la captura" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                    <TextBlock Text="Paso 1 de 6 • El Capturador en tu equipo" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    <TextBlock Text="Paso 1 de 7 • El Capturador en tu equipo" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                 </StackPanel>
                                 <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
                                     <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -107,8 +123,8 @@
 
                         <!-- Body -->
                         <StackPanel Grid.Row="1" Spacing="12" Margin="18,14">
-                            <TextBlock Text="El Capturador opera en segundo plano. Pulsa estas teclas para capturar:" 
-                                       FontSize="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                            <TextBlock Text="Usa estos atajos para capturar la pantalla en cualquier momento:" 
+                                       FontSize="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
 
                             <Grid ColumnDefinitions="*, *" Margin="0,4,0,4">
                                 <Border Grid.Column="0" Classes="mini-card" Margin="0,0,6,0">
@@ -130,8 +146,17 @@
                                 </Border>
                             </Grid>
 
-                            <TextBlock Text="Al capturar, escucharás un sonido y podrás ver la imagen en el Editor para trabajar en ella." 
-                                       FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Opacity="0.85" TextWrapping="Wrap" />
+                            <!-- Pie de tarjeta limpio -->
+                            <Grid ColumnDefinitions="Auto, *" Margin="2,2,2,0">
+                                <PathIcon Grid.Column="0" Data="{StaticResource IconInfo}" Width="14" Height="14" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Grid.Column="1" FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" VerticalAlignment="Center">
+                                    <Run Text="Reabre esta guía en cualquier momento con " />
+                                    <Run Text="F1" FontWeight="Bold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    <Run Text=" o en " />
+                                    <Run Text="Configuración → Editor" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                    <Run Text="." />
+                                </TextBlock>
+                            </Grid>
                         </StackPanel>
 
                         <!-- Footer -->
@@ -150,9 +175,267 @@
             </Panel>
 
             <!-- ================================================================= -->
-            <!-- Bloque 1: Herramientas de dibujo (barra superior del Editor)       -->
+            <!-- Bloque 1: El Capturador y el icono Q (barra superior derecha)      -->
             <!-- ================================================================= -->
             <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide1}">
+                <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, 52, 16, 0">
+                    <!-- Flecha hacia el Icono Q Superior Derecho (centrado sobre icono Q) -->
+                    <Path Data="M 0 10 L 10 0 L 20 10 Z" 
+                          Fill="{DynamicResource M3SurfaceContainerHighestBrush}" 
+                          Stroke="{DynamicResource M3OutlineVariantBrush}" 
+                          StrokeThickness="1" 
+                          HorizontalAlignment="Right" 
+                          Margin="0, 0, 64, 0" 
+                          VerticalAlignment="Top" />
+
+                    <!-- Tarjeta Coach Mark -->
+                    <Border Classes="coach-card" 
+                            Margin="0, 9, 0, 0"
+                            PointerPressed="DialogCard_PointerPressed">
+                        <Grid RowDefinitions="Auto, *, Auto">
+                            <!-- Header -->
+                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="18,12" CornerRadius="14,14,0,0">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <Border Grid.Column="0" Background="{DynamicResource M3SurfaceContainerBrush}" CornerRadius="8" Width="34" Height="34" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <Image Source="avares://Qapptia.App.Editor/Assets/tray_icon.png" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="Estado del Capturador" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                        <TextBlock Text="Paso 2 de 7 • En ejecución o detenido" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Body (Solo lo referido al icono Q) -->
+                            <StackPanel Grid.Row="1" Spacing="8" Margin="18,14">
+                                <TextBlock Text="{Binding ShortcutRequirementText}" 
+                                           TextWrapping="Wrap" 
+                                           FontSize="12" 
+                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" 
+                                           Margin="0,0,0,2" />
+
+                                <Border Classes="mini-card">
+                                    <Grid ColumnDefinitions="Auto, *">
+                                        <Border Grid.Column="0" Width="20" Height="20" CornerRadius="10" Background="#264CAF50" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <Ellipse Width="8" Height="8" Fill="#4CAF50" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="En ejecución" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="El punto verde confirma que está activo y listo para capturar." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Classes="mini-card">
+                                    <Grid ColumnDefinitions="Auto, *">
+                                        <Border Grid.Column="0" Width="20" Height="20" CornerRadius="10" Background="#26FF9800" Margin="0,0,10,0" VerticalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconWarning}" Width="12" Height="12" Foreground="#FF9800" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="Detenido" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="La alerta avisa que se detuvo y no capturará. Haz clic en el icono para iniciarlo." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Footer -->
+                            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="16,10" CornerRadius="0,0,14,14">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <CheckBox Grid.Column="0" Content="No mostrar al iniciar" IsChecked="{Binding DontShowAgainOnStartup, Mode=TwoWay}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Classes="coach-nav-btn outline-button" Content="Anterior" Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding CanGoPrevious}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                        <Button Classes="coach-nav-btn accent" Content="Siguiente" Command="{Binding NextSlideCommand}" FontWeight="SemiBold" IsVisible="{Binding !IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                        <Button Classes="coach-nav-btn accent" Content="Entendido" Command="{Binding CloseCommand}" FontWeight="SemiBold" IsVisible="{Binding IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Panel>
+
+            <!-- ================================================================= -->
+            <!-- Bloque 2: Apoyo al proyecto / Sponsor (barra superior derecha)    -->
+            <!-- ================================================================= -->
+            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide2}">
+                <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, 52, 16, 0">
+                    <!-- Flecha hacia el botón Sponsor en la barra superior derecha -->
+                    <Path Data="M 0 10 L 10 0 L 20 10 Z" 
+                          Fill="{DynamicResource M3SurfaceContainerHighestBrush}" 
+                          Stroke="#D97706" 
+                          StrokeThickness="1" 
+                          HorizontalAlignment="Right" 
+                          Margin="0, 0, 180, 0" 
+                          VerticalAlignment="Top" />
+
+                    <!-- Tarjeta Coach Mark con acento sutil de sponsor -->
+                    <Border Classes="coach-card coach-card-sponsor" 
+                            Margin="0, 9, 0, 0"
+                            PointerPressed="DialogCard_PointerPressed">
+                        <Grid RowDefinitions="Auto, *, Auto">
+                            <!-- Header con estilo y tonos cálidos ámbar -->
+                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="#D97706" BorderThickness="0,0,0,1" Padding="18,12" CornerRadius="14,14,0,0">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <Border Grid.Column="0" Classes="icon-badge-sponsor" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <Image Source="{StaticResource IconSponsorCoffeeHeart}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="Apoyar el proyecto" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                        <TextBlock Text="Paso 3 de 7 • El desarrollo libre depende de ti" FontSize="12" FontWeight="SemiBold" Foreground="#D97706" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Body -->
+                            <StackPanel Grid.Row="1" Spacing="10" Margin="18,14">
+                                <TextBlock Text="Qapptia es una herramienta gratuita y de código abierto, desarrollada de forma independiente y mantenida gracias al apoyo de sus usuarios." 
+                                           FontSize="13" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+
+                                <Grid ColumnDefinitions="*, *" Margin="0,2,0,2">
+                                    <Border Grid.Column="0" Classes="mini-card mini-card-sponsor" Margin="0,0,5,0">
+                                        <Grid ColumnDefinitions="Auto, *">
+                                            <Image Grid.Column="0" Source="{StaticResource IconSponsorHeartBadge}" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <StackPanel Grid.Column="1" Spacing="2">
+                                                <TextBlock Text="Proyecto libre" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                                <TextBlock Text="Una herramienta ligera, rápida y pensada para tu productividad." FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Grid.Column="1" Classes="mini-card mini-card-sponsor" Margin="5,0,0,0">
+                                        <Grid ColumnDefinitions="Auto, *">
+                                            <Image Grid.Column="0" Source="{StaticResource IconSponsorCoffeeCup}" Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <StackPanel Grid.Column="1" Spacing="2">
+                                                <TextBlock Text="Tu aporte importa" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                                <TextBlock Text="Impulsa nuevas funciones y mejoras continuas." FontSize="11" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Botón directo con estilo nativo sponsor-button -->
+                                <Button Classes="sponsor-button" 
+                                        Command="{Binding OpenSponsorCommand}" 
+                                        ToolTip.Tip="Abrir página de apoyo" 
+                                        Height="34" 
+                                        HorizontalAlignment="Stretch" 
+                                        HorizontalContentAlignment="Center" 
+                                        VerticalContentAlignment="Center" 
+                                        Margin="0,2,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Image Source="{StaticResource IconSponsorCoffeeHeart}" Width="18" Height="18" VerticalAlignment="Center" />
+                                        <TextBlock Text="Apoyar el proyecto ahora" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Footer -->
+                            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="16,10" CornerRadius="0,0,14,14">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <CheckBox Grid.Column="0" Content="No mostrar al iniciar" IsChecked="{Binding DontShowAgainOnStartup, Mode=TwoWay}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Classes="coach-nav-btn outline-button" Content="Anterior" Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding CanGoPrevious}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                        <Button Classes="coach-nav-btn accent" Content="Siguiente" Command="{Binding NextSlideCommand}" FontWeight="SemiBold" IsVisible="{Binding !IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                        <Button Classes="coach-nav-btn accent" Content="Entendido" Command="{Binding CloseCommand}" FontWeight="SemiBold" IsVisible="{Binding IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Panel>
+
+            <!-- ================================================================= -->
+            <!-- Bloque 3: Copiar y visualización (barra superior izquierda)        -->
+            <!-- ================================================================= -->
+            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide3}">
+                <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Margin="24, 52, 0, 0">
+                    <!-- Flecha hacia la zona de Copiar y Zoom (barra superior izquierda) -->
+                    <Path Data="M 0 10 L 10 0 L 20 10 Z" 
+                          Fill="{DynamicResource M3SurfaceContainerHighestBrush}" 
+                          Stroke="{DynamicResource M3OutlineVariantBrush}" 
+                          StrokeThickness="1" 
+                          HorizontalAlignment="Left" 
+                          Margin="56, 0, 0, 0" 
+                          VerticalAlignment="Top" />
+
+                    <!-- Tarjeta Coach Mark -->
+                    <Border Classes="coach-card" 
+                            Margin="0, 9, 0, 0"
+                            PointerPressed="DialogCard_PointerPressed">
+                        <Grid RowDefinitions="Auto, *, Auto">
+                            <!-- Header -->
+                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="18,12" CornerRadius="14,14,0,0">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <Border Grid.Column="0" Classes="icon-badge" Margin="0,0,12,0" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconCopyContent}" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="Copiar y visualización" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                        <TextBlock Text="Paso 4 de 7 • Barra superior izquierda" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
+                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
+                                    </Button>
+                                </Grid>
+                            </Border>
+
+                            <!-- Body (Estructura limpia y estándar de ancho completo) -->
+                            <StackPanel Grid.Row="1" Spacing="8" Margin="18,14">
+                                <Border Classes="mini-card">
+                                    <Grid ColumnDefinitions="Auto, *">
+                                        <PathIcon Grid.Column="0" Data="{StaticResource IconCopyContent}" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="Copiar al portapapeles" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                            <TextBlock FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap">
+                                                <Run Text="Usa " />
+                                                <Run Text="Ctrl+C" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                <Run Text=" para copiar la imagen directa o " />
+                                                <Run Text="Ctrl+F" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
+                                                <Run Text=" para copiarla como archivo." />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Classes="mini-card">
+                                    <Grid ColumnDefinitions="Auto, *">
+                                        <PathIcon Grid.Column="0" Data="{StaticResource IconFitImage}" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                        <StackPanel Grid.Column="1" Spacing="2">
+                                            <TextBlock Text="Zoom y escala de imagen" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
+                                            <TextBlock Text="Muestra en tamaño real (100 %), ajusta a la ventana o cambia la escala con el selector y la rueda del ratón." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+
+                            <!-- Footer -->
+                            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="16,10" CornerRadius="0,0,14,14">
+                                <Grid ColumnDefinitions="Auto, *, Auto">
+                                    <CheckBox Grid.Column="0" Content="No mostrar al iniciar" IsChecked="{Binding DontShowAgainOnStartup, Mode=TwoWay}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button Classes="coach-nav-btn outline-button" Content="Anterior" Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding CanGoPrevious}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                        <Button Classes="coach-nav-btn accent" Content="Siguiente" Command="{Binding NextSlideCommand}" FontWeight="SemiBold" IsVisible="{Binding !IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                        <Button Classes="coach-nav-btn accent" Content="Entendido" Command="{Binding CloseCommand}" FontWeight="SemiBold" IsVisible="{Binding IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Panel>
+
+            <!-- ================================================================= -->
+            <!-- Bloque 4: Herramientas de dibujo (barra superior del Editor)       -->
+            <!-- ================================================================= -->
+            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide4}">
                 <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Margin="380, 52, 0, 0">
                     <!-- Flecha hacia las herramientas de dibujo -->
                     <Path Data="M 0 10 L 10 0 L 20 10 Z" 
@@ -176,7 +459,7 @@
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                         <TextBlock Text="Herramientas de dibujo" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                        <TextBlock Text="Paso 2 de 6 • Barra superior del Editor" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Paso 5 de 7 • Barra superior del Editor" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                     </StackPanel>
                                     <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
                                         <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -237,167 +520,9 @@
             </Panel>
 
             <!-- ================================================================= -->
-            <!-- Bloque 2: Zoom y vista de la imagen (barra superior del Editor)    -->
+            <!-- Bloque 5: Configuración y Acerca de (barra superior derecha)       -->
             <!-- ================================================================= -->
-            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide2}">
-                <Grid HorizontalAlignment="Left" VerticalAlignment="Top" Margin="100, 52, 0, 0">
-                    <!-- Flecha hacia los Controles de Zoom -->
-                    <Path Data="M 0 10 L 10 0 L 20 10 Z" 
-                          Fill="{DynamicResource M3SurfaceContainerHighestBrush}" 
-                          Stroke="{DynamicResource M3OutlineVariantBrush}" 
-                          StrokeThickness="1" 
-                          HorizontalAlignment="Left" 
-                          Margin="40, 0, 0, 0" 
-                          VerticalAlignment="Top" />
-
-                    <!-- Tarjeta Coach Mark -->
-                    <Border Classes="coach-card" 
-                            Margin="0, 9, 0, 0"
-                            PointerPressed="DialogCard_PointerPressed">
-                        <Grid RowDefinitions="Auto, *, Auto">
-                            <!-- Header -->
-                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="18,12" CornerRadius="14,14,0,0">
-                                <Grid ColumnDefinitions="Auto, *, Auto">
-                                    <Border Grid.Column="0" Classes="icon-badge" Margin="0,0,12,0" VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconFitImage}" Width="18" Height="18" Foreground="{DynamicResource M3PrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                        <TextBlock Text="Zoom y vista de la imagen" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                        <TextBlock Text="Paso 3 de 6 • Controles de visualización" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                    </StackPanel>
-                                    <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- Body -->
-                            <StackPanel Grid.Row="1" Spacing="8" Margin="18,14">
-                                <Border Classes="mini-card">
-                                    <Grid ColumnDefinitions="Auto, *">
-                                        <PathIcon Grid.Column="0" Data="{StaticResource IconFitImage}" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="Tamaño real y ajustar" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
-                                            <TextBlock Text="Muestra la imagen en su tamaño real (100 %) o ajústala a la ventana." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-
-                                <Border Classes="mini-card">
-                                    <Grid ColumnDefinitions="Auto, *">
-                                        <PathIcon Grid.Column="0" Data="{StaticResource IconMouse}" Width="16" Height="16" Foreground="{DynamicResource M3PrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="Nivel de zoom" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
-                                            <TextBlock Text="Usa la rueda del ratón o elige un porcentaje para acercar y alejar la imagen." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-
-                            <!-- Footer -->
-                            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="16,10" CornerRadius="0,0,14,14">
-                                <Grid ColumnDefinitions="Auto, *, Auto">
-                                    <CheckBox Grid.Column="0" Content="No mostrar al iniciar" IsChecked="{Binding DontShowAgainOnStartup, Mode=TwoWay}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Button Classes="coach-nav-btn outline-button" Content="Anterior" Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding CanGoPrevious}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                                        <Button Classes="coach-nav-btn accent" Content="Siguiente" Command="{Binding NextSlideCommand}" FontWeight="SemiBold" IsVisible="{Binding !IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                                        <Button Classes="coach-nav-btn accent" Content="Entendido" Command="{Binding CloseCommand}" FontWeight="SemiBold" IsVisible="{Binding IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Panel>
-
-            <!-- ================================================================= -->
-            <!-- Bloque 3: El Capturador y el icono Q (barra superior derecha)      -->
-            <!-- ================================================================= -->
-            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide3}">
-                <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, 52, 16, 0">
-                    <!-- Flecha hacia el Icono Q Superior Derecho (centrado sobre icono Q) -->
-                    <Path Data="M 0 10 L 10 0 L 20 10 Z" 
-                          Fill="{DynamicResource M3SurfaceContainerHighestBrush}" 
-                          Stroke="{DynamicResource M3OutlineVariantBrush}" 
-                          StrokeThickness="1" 
-                          HorizontalAlignment="Right" 
-                          Margin="0, 0, 64, 0" 
-                          VerticalAlignment="Top" />
-
-                    <!-- Tarjeta Coach Mark -->
-                    <Border Classes="coach-card" 
-                            Margin="0, 9, 0, 0"
-                            PointerPressed="DialogCard_PointerPressed">
-                        <Grid RowDefinitions="Auto, *, Auto">
-                            <!-- Header -->
-                            <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="18,12" CornerRadius="14,14,0,0">
-                                <Grid ColumnDefinitions="Auto, *, Auto">
-                                    <Border Grid.Column="0" Background="{DynamicResource M3SurfaceContainerBrush}" CornerRadius="8" Width="34" Height="34" Margin="0,0,12,0" VerticalAlignment="Center">
-                                        <Image Source="avares://Qapptia.App.Editor/Assets/tray_icon.png" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                        <TextBlock Text="Estado del Capturador" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                        <TextBlock Text="Paso 4 de 6 • En ejecución o detenido" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
-                                    </StackPanel>
-                                    <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
-                                        <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                                    </Button>
-                                </Grid>
-                            </Border>
-
-                            <!-- Body (Solo lo referido al icono Q) -->
-                            <StackPanel Grid.Row="1" Spacing="8" Margin="18,14">
-                                <TextBlock Text="{Binding ShortcutRequirementText}"
-                                           TextWrapping="Wrap" 
-                                           FontSize="12" 
-                                           Foreground="{DynamicResource M3OnSurfaceVariantBrush}" 
-                                           Margin="0,0,0,2" />
-
-                                <Border Classes="mini-card">
-                                    <Grid ColumnDefinitions="Auto, *">
-                                        <Border Grid.Column="0" Width="20" Height="20" CornerRadius="10" Background="#264CAF50" Margin="0,0,10,0" VerticalAlignment="Center">
-                                            <Ellipse Width="8" Height="8" Fill="#4CAF50" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="En ejecución" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
-                                            <TextBlock Text="El punto verde confirma que está listo para responder a tus atajos." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-
-                                <Border Classes="mini-card">
-                                    <Grid ColumnDefinitions="Auto, *">
-                                        <Border Grid.Column="0" Width="20" Height="20" CornerRadius="10" Background="#26FF9800" Margin="0,0,10,0" VerticalAlignment="Center">
-                                            <PathIcon Data="{StaticResource IconWarning}" Width="12" Height="12" Foreground="#FF9800" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="Detenido" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" />
-                                            <TextBlock Text="La alerta avisa que se detuvo y no capturará. Haz clic en el icono para iniciarlo." FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </StackPanel>
-
-                            <!-- Footer -->
-                            <Border Grid.Row="2" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,1,0,0" Padding="16,10" CornerRadius="0,0,14,14">
-                                <Grid ColumnDefinitions="Auto, *, Auto">
-                                    <CheckBox Grid.Column="0" Content="No mostrar al iniciar" IsChecked="{Binding DontShowAgainOnStartup, Mode=TwoWay}" FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Button Classes="coach-nav-btn outline-button" Content="Anterior" Command="{Binding PreviousSlideCommand}" IsEnabled="{Binding CanGoPrevious}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                                        <Button Classes="coach-nav-btn accent" Content="Siguiente" Command="{Binding NextSlideCommand}" FontWeight="SemiBold" IsVisible="{Binding !IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                                        <Button Classes="coach-nav-btn accent" Content="Entendido" Command="{Binding CloseCommand}" FontWeight="SemiBold" IsVisible="{Binding IsLastSlide}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Panel>
-
-            <!-- ================================================================= -->
-            <!-- Bloque 4: Configuración y Acerca de (barra superior derecha)       -->
-            <!-- ================================================================= -->
-            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide4}">
+            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide5}">
                 <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0, 52, 16, 0">
                     <!-- Flecha hacia Configuración y Acerca de (al costado del icono Q) -->
                     <Path Data="M 0 10 L 10 0 L 20 10 Z" 
@@ -421,7 +546,7 @@
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                         <TextBlock Text="Configuración y Acerca de / Descarga" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                        <TextBlock Text="Paso 5 de 6 • Barra superior del Editor" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Paso 6 de 7 • Barra superior del Editor" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                     </StackPanel>
                                     <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
                                         <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
@@ -469,9 +594,9 @@
             </Panel>
 
             <!-- ================================================================= -->
-            <!-- Bloque 5: Información de la imagen (barra inferior del Editor)     -->
+            <!-- Bloque 6: Información de la imagen (barra inferior del Editor)     -->
             <!-- ================================================================= -->
-            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide5}">
+            <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding IsSlide6}">
                 <Grid HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="24, 0, 0, 36">
                     <!-- Tarjeta Coach Mark -->
                     <Border Classes="coach-card" 
@@ -485,7 +610,7 @@
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                         <TextBlock Text="Información de la imagen" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />
-                                        <TextBlock Text="Paso 6 de 6 • Barra inferior del Editor" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
+                                        <TextBlock Text="Paso 7 de 7 • Barra inferior del Editor" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource M3PrimaryBrush}" />
                                     </StackPanel>
                                     <Button Grid.Column="2" Classes="close-button" Command="{Binding CloseCommand}" ToolTip.Tip="Cerrar (Esc)" VerticalAlignment="Center">
                                         <PathIcon Data="{StaticResource IconClose}" Width="14" Height="14" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />

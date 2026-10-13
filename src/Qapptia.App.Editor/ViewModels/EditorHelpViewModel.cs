@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
+using Qapptia.Core.Services;
 
 namespace Qapptia.App.Editor.ViewModels;
 
@@ -14,9 +16,10 @@ namespace Qapptia.App.Editor.ViewModels;
 public partial class EditorHelpViewModel : ObservableObject
 {
     private readonly IConfigService _configService;
+    private readonly IShellService _shellService;
     private readonly HashSet<int> _visitedSlides = [];
 
-    public const int TotalSlidesCount = 6;
+    public const int TotalSlidesCount = 7;
 
     [ObservableProperty]
     private bool _isVisible;
@@ -25,15 +28,14 @@ public partial class EditorHelpViewModel : ObservableObject
     private bool _dontShowAgainOnStartup;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShortcutRequirementText))]
     private string _shortcutScreenText = "Ctrl + Shift + Q";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShortcutRequirementText))]
     private string _shortcutAreaText = "Ctrl + Shift + A";
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Requerido como propiedad de instancia para binding en Avalonia")]
     public string ShortcutRequirementText =>
-        $"Para capturar con el teclado ({ShortcutScreenText} y {ShortcutAreaText}), el Capturador debe estar en ejecución:";
+        "Para poder capturar la pantalla, el Capturador debe estar activo:";
 
     [ObservableProperty]
     private bool _hasSeenAllSlides;
@@ -49,6 +51,7 @@ public partial class EditorHelpViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsSlide3))]
     [NotifyPropertyChangedFor(nameof(IsSlide4))]
     [NotifyPropertyChangedFor(nameof(IsSlide5))]
+    [NotifyPropertyChangedFor(nameof(IsSlide6))]
     private int _currentSlideIndex;
 
     public static int TotalSlides => TotalSlidesCount;
@@ -67,11 +70,29 @@ public partial class EditorHelpViewModel : ObservableObject
     public bool IsSlide3 => CurrentSlideIndex == 3;
     public bool IsSlide4 => CurrentSlideIndex == 4;
     public bool IsSlide5 => CurrentSlideIndex == 5;
+    public bool IsSlide6 => CurrentSlideIndex == 6;
 
-    public EditorHelpViewModel(IConfigService configService)
+    public EditorHelpViewModel(IConfigService configService, IShellService? shellService = null)
     {
         _configService = configService ?? throw new ArgumentNullException(nameof(configService));
+        _shellService = shellService ?? NullShellService.Instance;
         RefreshShortcuts();
+    }
+
+    /// <summary>
+    /// Abre el enlace de apoyo/patrocinio del proyecto en el navegador predeterminado.
+    /// </summary>
+    [RelayCommand]
+    public void OpenSponsor()
+    {
+        try
+        {
+            _shellService.OpenUrl(Qapptia.Core.Constants.DefaultSponsorUrl);
+        }
+        catch
+        {
+            // Resiliencia ante fallos del navegador
+        }
     }
 
     partial void OnCurrentSlideIndexChanged(int value)

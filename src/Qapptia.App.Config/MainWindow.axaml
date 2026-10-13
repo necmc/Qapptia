@@ -135,18 +135,30 @@
             <TabItem Header="Editor" Content="{Binding}">
                 <TabItem.ContentTemplate>
                     <DataTemplate x:DataType="vm:ConfigViewModel">
-                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" Margin="16">
-                            <PathIcon Data="{StaticResource IconConfig}" Width="32" Height="32" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Opacity="0.4" HorizontalAlignment="Center" />
-                            <TextBlock Text="Configuración del Editor" 
-                                       HorizontalAlignment="Center" 
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}" />
-                            <TextBlock Text="Opciones avanzadas y herramientas del Editor disponibles próximamente."
-                                       HorizontalAlignment="Center"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource M3OnSurfaceVariantBrush}"
-                                       Opacity="0.7" />
+                        <StackPanel Spacing="16" Margin="16">
+                            <!-- Sección Guía del Editor -->
+                            <HeaderedContentControl Header="{x:Static core:Constants.AboutHelpHeader}">
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                    <TextBlock Grid.Column="0" 
+                                               Text="{x:Static core:Constants.AboutHelpDescription}" 
+                                               FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                    <Button Grid.Column="1" 
+                                            Command="{Binding OpenEditorHelpCommand}"
+                                            ToolTip.Tip="{x:Static core:Constants.AboutHelpToolTip}"
+                                            MinWidth="210"
+                                            Padding="14,0"
+                                            Height="36"
+                                            HorizontalContentAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Classes="outline-button">
+                                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <PathIcon Data="{StaticResource IconHelp}" Width="16" Height="16" VerticalAlignment="Center" />
+                                            <TextBlock Text="{x:Static core:Constants.AboutHelpButtonText}" FontSize="14" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </HeaderedContentControl>
                         </StackPanel>
                     </DataTemplate>
                 </TabItem.ContentTemplate>
@@ -176,28 +188,6 @@
                                                    FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
                                     </Grid>
                                 </Border>
-
-                                <!-- Acceso a la Guía del Editor (Línea directa bajo la descripción) -->
-                                <Grid ColumnDefinitions="*,Auto" Margin="0,-4,0,0">
-                                    <TextBlock Grid.Column="0" 
-                                               Text="{x:Static core:Constants.AboutHelpDescription}" 
-                                               FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
-                                    <Button Grid.Column="1" 
-                                            Command="{Binding OpenEditorHelpCommand}"
-                                            ToolTip.Tip="{x:Static core:Constants.AboutHelpToolTip}"
-                                            MinWidth="210"
-                                            Padding="14,0"
-                                            Height="36"
-                                            HorizontalContentAlignment="Center"
-                                            VerticalContentAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Classes="outline-button">
-                                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <PathIcon Data="{StaticResource IconHelp}" Width="16" Height="16" VerticalAlignment="Center" />
-                                            <TextBlock Text="{x:Static core:Constants.AboutHelpButtonText}" FontSize="14" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-                                </Grid>
 
                                 <!-- Sección Apoyo / Colaboración (Random Icon + Random Text) -->
                                 <HeaderedContentControl Header="{x:Static core:Constants.AboutSupportHeader}">

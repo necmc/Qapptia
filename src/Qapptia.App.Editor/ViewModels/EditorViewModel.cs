@@ -136,8 +136,10 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         IConfigService? configService = null,
         EditorHelpViewModel? helpViewModel = null)
     {
+        var shell = shellService ?? NullShellService.Instance;
+        _shellService = shell;
         _configService = configService;
-        Help = helpViewModel ?? new EditorHelpViewModel(configService ?? new DefaultFallbackConfigService());
+        Help = helpViewModel ?? new EditorHelpViewModel(configService ?? new DefaultFallbackConfigService(), shell);
         _clipboardService = clipboardService;
         _updateCheckService = updateCheckService;
         if (_updateCheckService != null)
@@ -167,8 +169,6 @@ public partial class EditorViewModel : ObservableObject, IDisposable
 
         var navService = navigationService ?? new NavigationService(Log.Logger.ForContext<NavigationService>());
         var canvasService = canvasStateService ?? new CanvasStateService(Log.Logger.ForContext<CanvasStateService>());
-        var shell = shellService ?? NullShellService.Instance;
-        _shellService = shell;
         _sponsorVisual = SponsorVisualHelper.GetRandomCombination();
 
         _captureAppService = captureAppService ?? NullCaptureAppService.Instance;
