@@ -9,7 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Update="scenarios\**">
+    <None Update="versions\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update=".htaccess">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

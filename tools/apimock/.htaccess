@@ -1,0 +1,7 @@
+Options -Indexes
+
+RewriteEngine On
+RewriteRule (^|/)\. - [F]
+
+# Endpoint estándar de versión API v1 -> reescritura permanente a latest.json
+RewriteRule ^api/v1/version$ versions/latest.json [L]

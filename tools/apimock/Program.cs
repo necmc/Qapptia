@@ -6,86 +6,131 @@ using Microsoft.AspNetCore.Http;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-string activeCase = "update";
-
-// 1. Verificación de versiones con despacho basado en archivos en scenarios/{case}.json
-app.MapGet("/api/version", (string? @case) =>
+// Configuración CORS transversal para permitir consumo desde navegador o clientes locales
+app.Use(async (context, next) =>
 {
-    var name = (@case ?? activeCase).Trim().ToLowerInvariant();
-    var file = Path.Combine(app.Environment.ContentRootPath, "scenarios", $"{name}.json");
-
-    if (!File.Exists(file))
+    context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+    context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    context.Response.Headers.Append("Access-Control-Allow-Headers", "*");
+    if (context.Request.Method == "OPTIONS")
     {
-        return Results.NotFound(new { error = $"Caso de prueba '{name}' no existe en scenarios/." });
+        context.Response.StatusCode = 204;
+        return;
     }
+    await next();
+});
 
-    // Persistir como caso activo global si se especificó explícitamente por query param
+// Estado en memoria del caso de prueba activo
+string? activeCase = null;
+object stateLock = new();
+
+// Endpoint estándar de versión API v1:
+// - Si ?case=xxxx se especifica: fija xxxx como el caso activo del servidor y responde con él.
+//   (usar ?case=reset, ?case=default o ?case=latest para restaurar el comportamiento normal de latest.json).
+// - Si ?case no se especifica: responde con el caso activo actual (o latest.json si ninguno está activo).
+var handleGetVersion = (string? @case) =>
+{
+    // Si se pasa un nuevo caso, intentamos cambiar el estado del mock
     if (!string.IsNullOrWhiteSpace(@case))
     {
-        activeCase = name;
-    }
-
-    try
-    {
-        using var doc = JsonDocument.Parse(File.ReadAllText(file));
-        var root = doc.RootElement;
-
-        int statusCode = root.TryGetProperty("statusCode", out var s) ? s.GetInt32() : 200;
-
-        if (root.TryGetProperty("delayMs", out var d) && d.GetInt32() > 0)
+        var target = @case.Trim();
+        if (target.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
         {
-            Thread.Sleep(d.GetInt32());
+            target = target[..^5];
         }
+        var name = target.ToLowerInvariant();
 
-        if (root.TryGetProperty("rawBody", out var raw))
+        if (name is "reset" or "default" or "latest")
         {
-            return Results.Content(raw.GetString() ?? string.Empty, "application/json", statusCode: statusCode);
+            lock (stateLock)
+            {
+                activeCase = null;
+            }
+            Console.WriteLine("[apimock] Estado reseteado a 'versions/latest.json'");
         }
-
-        if (root.TryGetProperty("body", out var body))
+        else
         {
-            return Results.Content(body.GetRawText(), "application/json", statusCode: statusCode);
+            var testCaseFile = Path.Combine(app.Environment.ContentRootPath, "versions", "cases", $"{name}.json");
+            var testVersionFile = Path.Combine(app.Environment.ContentRootPath, "versions", $"{name}.json");
+
+            if (File.Exists(testCaseFile) || File.Exists(testVersionFile))
+            {
+                lock (stateLock)
+                {
+                    activeCase = name;
+                }
+                Console.WriteLine($"[apimock] Caso activo fijado a '{name}' (las peticiones sin ?case responderán con este caso)");
+            }
+            else
+            {
+                return Results.NotFound(new { error = $"Caso de prueba '{name}' no existe en versions/cases/ ni en versions/." });
+            }
         }
-
-        return Results.StatusCode(statusCode);
     }
-    catch (JsonException ex)
+
+    // Determinar qué responder según el caso activo
+    string? currentCase;
+    lock (stateLock)
     {
-        return Results.Problem($"El archivo del caso '{name}.json' contiene JSON malformado: {ex.Message}");
+        currentCase = activeCase;
     }
-});
 
-// Permite cambiar el caso activo global para llamadas sin parámetros de Qapptia
-app.MapPost("/api/version", (string @case) =>
-{
-    var name = @case.Trim().ToLowerInvariant();
-    var file = Path.Combine(app.Environment.ContentRootPath, "scenarios", $"{name}.json");
-
-    if (!File.Exists(file))
+    // Si no hay caso activo, responde con latest.json
+    if (string.IsNullOrWhiteSpace(currentCase))
     {
-        return Results.NotFound(new { error = $"Caso de prueba '{name}' no existe en scenarios/." });
+        var latestFile = Path.Combine(app.Environment.ContentRootPath, "versions", "latest.json");
+        return File.Exists(latestFile)
+            ? Results.Content(File.ReadAllText(latestFile), "application/json; charset=utf-8", statusCode: 200)
+            : Results.NotFound(new { error = "El archivo 'versions/latest.json' no existe." });
     }
 
-    activeCase = name;
-    return Results.Ok(new { message = $"Caso activo cambiado a '{activeCase}'." });
-});
+    // 1. Buscar en versions/cases/ (casos de prueba y simulación: update, beta, 500, 503, timeout, etc.)
+    var caseFile = Path.Combine(app.Environment.ContentRootPath, "versions", "cases", $"{currentCase}.json");
+    if (File.Exists(caseFile))
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(caseFile));
+            var root = doc.RootElement;
 
-// 2. Página web de descarga de actualizaciones (HTML básico)
-app.MapGet("/download", () =>
-{
-    var file = Path.Combine(app.Environment.ContentRootPath, "pages", "download.html");
-    return File.Exists(file)
-        ? Results.Content(File.ReadAllText(file), "text/html; charset=utf-8")
-        : Results.NotFound("Página 'pages/download.html' no encontrada.");
-});
+            int statusCode = root.TryGetProperty("statusCode", out var s) ? s.GetInt32() : 200;
 
-// 3. Página web de patrocinio (HTML básico)
-app.MapGet("/sponsor", () =>
-{
-    var file = Path.Combine(app.Environment.ContentRootPath, "pages", "sponsor.html");
-    return File.Exists(file)
-        ? Results.Content(File.ReadAllText(file), "text/html; charset=utf-8")
-        : Results.NotFound("Página 'pages/sponsor.html' no encontrada.");
-});
+            if (root.TryGetProperty("delayMs", out var d) && d.GetInt32() > 0)
+            {
+                Thread.Sleep(d.GetInt32());
+            }
+
+            if (root.TryGetProperty("rawBody", out var raw))
+            {
+                return Results.Content(raw.GetString() ?? string.Empty, "application/json; charset=utf-8", statusCode: statusCode);
+            }
+
+            if (root.TryGetProperty("body", out var body))
+            {
+                return Results.Content(body.GetRawText(), "application/json; charset=utf-8", statusCode: statusCode);
+            }
+
+            return Results.StatusCode(statusCode);
+        }
+        catch (JsonException ex)
+        {
+            return Results.Problem($"El archivo del caso '{currentCase}.json' contiene JSON malformado: {ex.Message}");
+        }
+    }
+
+    // 2. Buscar en versions/ (por si se consulta una versión específica como v2.0.0 o v2.0.0-beta)
+    var versionFile = Path.Combine(app.Environment.ContentRootPath, "versions", $"{currentCase}.json");
+    if (File.Exists(versionFile))
+    {
+        var content = File.ReadAllText(versionFile);
+        return Results.Content(content, "application/json; charset=utf-8", statusCode: 200);
+    }
+
+    return Results.NotFound(new { error = $"El caso activo '{currentCase}' ya no existe en versions/cases/ ni en versions/." });
+};
+
+app.MapGet("/api/v1/version", handleGetVersion);
+app.MapGet("/api/v1/case", () => Results.Ok(new { activeCase = activeCase ?? "latest" }));
 
 app.Run();
+

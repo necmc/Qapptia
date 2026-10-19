@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "2.0.0-beta",
+  "isEnabled": true,
+  "publishedAt": "2026-10-15T12:00:00Z",
+  "siteDownload": "http://localhost:5050/download",
+  "siteSponsor": "http://localhost:5050/sponsor",
+  "siteRepositoryGH": "https://github.com/necmc/Qapptia",
+  "changelog": [
+    "Explorador integrado con organizacion automatica por fecha (ano, mes, semana y dia).",
+    "Borrador inteligente optimizado para censurar credenciales en evidencias.",
+    "Copiado instantaneo de archivo fisico (Ctrl+F) para adjuntar en tickets y carpetas.",
+    "Atajos de captura de pantalla completa y de area configurables."
+  ],
+  "platform": {
+    "windows": {
+      "isAvailable": true,
+      "variants": {
+        "installer": {
+          "filename": "Qapptia-setup.exe",
+          "url": "https://github.com/necmc/Qapptia/releases/download/v2.0.0-beta/Qapptia-setup.exe",
+          "alternativeMirrorUrl": "../../Qapptia-setup.exe",
+          "sizeMB": 40.4,
+          "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+        },
+        "portable": {
+          "filename": "Qapptia-v2.0.0-beta-win-x64-portable.zip",
+          "url": "https://github.com/necmc/Qapptia/releases/download/v2.0.0-beta/Qapptia-v2.0.0-beta-win-x64-portable.zip",
+          "alternativeMirrorUrl": "../../Qapptia-v2.0.0-beta-win-x64-portable.zip",
+          "sizeMB": 64.0,
+          "sha256": "7a35c24e89f81a7b6d5c4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3b"
+        },
+        "portableLight": {
+          "filename": "Qapptia-v2.0.0-beta-win-x64-portable-light.zip",
+          "url": "https://github.com/necmc/Qapptia/releases/download/v2.0.0-beta/Qapptia-v2.0.0-beta-win-x64-portable-light.zip",
+          "alternativeMirrorUrl": "../../Qapptia-v2.0.0-beta-win-x64-portable-light.zip",
+          "sizeMB": 27.5,
+          "sha256": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a"
+        }
+      }
+    },
+    "linux": {
+      "isAvailable": false,
+      "variants": {
+        "appImage": null,
+        "deb": null,
+        "tarGz": null
+      }
+    },
+    "macos": {
+      "isAvailable": false,
+      "variants": {
+        "dmg": null,
+        "pkg": null
+      }
+    }
+  },
+  "isCritical": false,
+  "minSupportedVersion": null
+}

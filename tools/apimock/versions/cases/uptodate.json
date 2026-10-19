@@ -1,0 +1,35 @@
+{
+  "statusCode": 200,
+  "delayMs": 0,
+  "body": {
+    "version": "2.0.0-beta",
+    "isEnabled": true,
+    "publishedAt": "2026-10-06T12:00:00Z",
+    "siteDownload": "http://localhost:5050/download",
+    "siteSponsor": "http://localhost:5050/sponsor",
+    "siteRepositoryGH": "https://github.com/necmc/Qapptia",
+    "changelog": [
+      "Qapptia esta actualizado. No hay nuevas versiones disponibles."
+    ],
+    "platform": {
+      "windows": {
+        "isAvailable": true,
+        "variants": {
+          "installer": {
+            "filename": "Qapptia-setup.exe",
+            "url": "http://localhost:5050/download",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      },
+      "linux": {
+        "isAvailable": false
+      },
+      "macos": {
+        "isAvailable": false
+      }
+    },
+    "isCritical": false,
+    "minSupportedVersion": "1.0.0"
+  }
+}
