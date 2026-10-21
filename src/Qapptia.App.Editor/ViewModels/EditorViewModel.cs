@@ -639,7 +639,7 @@ public partial class EditorViewModel : ObservableObject, IDisposable
             // Si Capture no está corriendo o no respondió: el Editor asume la responsabilidad transversal
             if (!captureResponded && !_captureAppService.IsRunning && _updateCoordinator != null)
             {
-                _updateCoordinator.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.StartupUpdateCheckDelayMs));
+                _updateCoordinator.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.UpdateTimingStartupDelayMs));
             }
         });
     }
@@ -650,9 +650,9 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         {
             if (result.Status == UpdateCheckStatus.UpdateAvailable && result.LatestRelease != null)
             {
-                InMemoryUpdateStateStore.SetUpdate(result.LatestRelease.Version, result.LatestRelease.DownloadUrl);
+                InMemoryUpdateStateStore.SetUpdate(result.LatestRelease.Version, result.LatestRelease.SiteDownload);
             }
-            else
+            else if (result.Status == UpdateCheckStatus.UpToDate)
             {
                 InMemoryUpdateStateStore.Clear();
             }
@@ -710,7 +710,7 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         else
         {
             // Capture se cerró o se detuvo: el Editor asume el relevo autónomo de comprobaciones
-            _updateCoordinator?.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.StartupUpdateCheckDelayMs));
+            _updateCoordinator?.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.UpdateTimingStartupDelayMs));
         }
     }
 

@@ -20,6 +20,9 @@ public sealed class PeriodicUpdateCoordinator : IDisposable
 
     private CancellationTokenSource? _cts;
     private Task? _runningTask;
+    private int _consecutiveNoInternetAttempts;
+    private int _consecutiveServerAttempts;
+    private bool _hadPreviousFailure;
 
     /// <summary>
     /// Evento disparado cada vez que finaliza una comprobación de actualización.
@@ -60,9 +63,12 @@ public sealed class PeriodicUpdateCoordinator : IDisposable
         lock (_syncRoot)
         {
             StopInternal();
+            _consecutiveNoInternetAttempts = 0;
+            _consecutiveServerAttempts = 0;
+            _hadPreviousFailure = false;
             _cts = new CancellationTokenSource();
-            var delay = initialDelay ?? (TimeSpan.FromMilliseconds(Constants.StartupUpdateCheckDelayMs)
-                + TimeSpan.FromMilliseconds(Random.Shared.Next(0, Constants.StartupUpdateCheckMaxJitterMs)));
+            var delay = initialDelay ?? (TimeSpan.FromMilliseconds(Constants.UpdateTimingStartupDelayMs)
+                + TimeSpan.FromMilliseconds(Random.Shared.Next(0, Constants.UpdateTimingStartupMaxJitterMs)));
             _runningTask = RunLoopAsync(delay, _cts.Token);
         }
     }
@@ -116,13 +122,26 @@ public sealed class PeriodicUpdateCoordinator : IDisposable
 
                 if (result.Status == UpdateCheckStatus.UpdateAvailable || result.Status == UpdateCheckStatus.UpToDate)
                 {
+                    if (_hadPreviousFailure)
+                    {
+                        _logger.Information("Conexión restablecida con el servicio de actualizaciones ({Status}).", result.Status);
+                        _hadPreviousFailure = false;
+                    }
+                    _consecutiveNoInternetAttempts = 0;
+                    _consecutiveServerAttempts = 0;
                     nextInterval = GetPeriodicIntervalWithJitter();
+                }
+                else if (result.Status == UpdateCheckStatus.NoInternet)
+                {
+                    _consecutiveNoInternetAttempts++;
+                    _hadPreviousFailure = true;
+                    nextInterval = GetNoInternetIntervalWithJitter(_consecutiveNoInternetAttempts);
                 }
                 else
                 {
-                    nextInterval = GetRetryIntervalWithJitter();
-                    _logger.Information("La comprobación de actualización no fue concluyente ({Status}). Reintentando en {RetryInterval}.",
-                        result.Status, nextInterval);
+                    _consecutiveServerAttempts++;
+                    _hadPreviousFailure = true;
+                    nextInterval = GetServerUnavailableIntervalWithJitter(_consecutiveServerAttempts);
                 }
             }
             catch (OperationCanceledException)
@@ -131,8 +150,11 @@ public sealed class PeriodicUpdateCoordinator : IDisposable
             }
             catch (Exception ex)
             {
-                nextInterval = GetRetryIntervalWithJitter();
-                _logger.Warning(ex, "Error durante la comprobación de actualización periódica. Reintentando en {RetryInterval}.", nextInterval);
+                _consecutiveServerAttempts++;
+                _hadPreviousFailure = true;
+                nextInterval = GetServerUnavailableIntervalWithJitter(_consecutiveServerAttempts);
+
+                _logger.Warning(ex, "Error durante la comprobación periódica de actualizaciones.");
             }
 
             try
@@ -148,16 +170,33 @@ public sealed class PeriodicUpdateCoordinator : IDisposable
 
     private static TimeSpan GetPeriodicIntervalWithJitter()
     {
-        var maxJitterSeconds = (int)Constants.PeriodicUpdateCheckMaxJitter.TotalSeconds;
+        var maxJitterSeconds = (int)Constants.UpdateTimingPeriodicMaxJitter.TotalSeconds;
         var jitterSeconds = Random.Shared.Next(-maxJitterSeconds, maxJitterSeconds + 1);
-        return Constants.PeriodicUpdateCheckInterval + TimeSpan.FromSeconds(jitterSeconds);
+        return Constants.UpdateTimingPeriodicInterval + TimeSpan.FromSeconds(jitterSeconds);
     }
 
-    private static TimeSpan GetRetryIntervalWithJitter()
+    private static TimeSpan GetServerUnavailableIntervalWithJitter(int attempt)
     {
-        var maxJitterSeconds = (int)Constants.FailedUpdateCheckRetryMaxJitter.TotalSeconds;
+        var minutesArray = Constants.UpdateTimingServerUnavailableBackoffMinutes;
+        var index = Math.Clamp(attempt - 1, 0, minutesArray.Length - 1);
+        var baseInterval = TimeSpan.FromMinutes(minutesArray[index]);
+
+        var maxJitterSeconds = (int)Constants.UpdateTimingServerUnavailableRetryMaxJitter.TotalSeconds;
         var jitterSeconds = Random.Shared.Next(-maxJitterSeconds, maxJitterSeconds + 1);
-        return Constants.FailedUpdateCheckRetryInterval + TimeSpan.FromSeconds(jitterSeconds);
+        var interval = baseInterval + TimeSpan.FromSeconds(jitterSeconds);
+        return interval < TimeSpan.FromMinutes(1) ? TimeSpan.FromMinutes(1) : interval;
+    }
+
+    private static TimeSpan GetNoInternetIntervalWithJitter(int attempt)
+    {
+        var hoursArray = Constants.UpdateTimingNoInternetBackoffHours;
+        var index = Math.Clamp(attempt - 1, 0, hoursArray.Length - 1);
+        var baseInterval = TimeSpan.FromHours(hoursArray[index]);
+
+        var maxJitterSeconds = (int)Constants.UpdateTimingNoInternetMaxJitter.TotalSeconds;
+        var jitterSeconds = Random.Shared.Next(-maxJitterSeconds, maxJitterSeconds + 1);
+        var interval = baseInterval + TimeSpan.FromSeconds(jitterSeconds);
+        return interval < TimeSpan.FromMinutes(1) ? TimeSpan.FromMinutes(1) : interval;
     }
 
     public void Dispose()

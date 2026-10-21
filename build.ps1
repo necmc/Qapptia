@@ -47,7 +47,7 @@ param (
     [switch]$Installer,
     [switch]$PackageAll,
     [switch]$Run,
-    [string]$Configuration = "Release",
+    [string]$Configuration,
     [string]$Runtime = "win-x64",
     [switch]$NoTest
 )
@@ -65,7 +65,15 @@ function Stop-ExistingQapptiaProcesses {
         $procList = ($runningProcesses | ForEach-Object { "$($_.ProcessName) (PID: $($_.Id))" }) -join ", "
         Write-Host "Procesos previos de Qapptia detectados en ejecución: $procList. Cerrando..." -ForegroundColor Yellow
         $runningProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Milliseconds 150
+
+        # Esperar activamente a que los procesos finalicen y liberen los descriptores en el kernel
+        $timeoutSeconds = 5
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        while ($sw.Elapsed.TotalSeconds -lt $timeoutSeconds) {
+            $remaining = @(Get-Process -Name "*Qapptia*" -ErrorAction SilentlyContinue)
+            if ($remaining.Count -eq 0) { break }
+            Start-Sleep -Milliseconds 100
+        }
     }
 }
 
@@ -87,21 +95,41 @@ $buildInstaller = $Installer -or $PackageAll
 $buildSelfContained = $buildZipSelfContained -or $buildInstaller
 $isPackaging = $buildFramework -or $buildSelfContained -or $buildInstaller
 
+if ([string]::IsNullOrWhiteSpace($Configuration)) {
+    $Configuration = if ($isPackaging) { "Release" } else { "Debug" }
+}
+
 Write-Host "Qapptia Build - Versión: $appVersion ($Configuration)" -ForegroundColor Cyan
 
 # Limpieza previa de bin, obj y dist al empaquetar o si se invoca -Clean
 if ($isPackaging -or $Clean) {
     Write-Host "`nLimpiando artefactos previos (bin, obj, dist)..." -ForegroundColor Yellow
     Stop-ExistingQapptiaProcesses
+    Write-Host "Deteniendo servidores de compilación de Roslyn/MSBuild..." -ForegroundColor DarkGray
     & dotnet build-server shutdown | Out-Null
-    Start-Sleep -Milliseconds 100
+    Start-Sleep -Milliseconds 400
 
-    Get-ChildItem -Path $rootDir -Include "bin", "obj" -Recurse -Directory -Force -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch '[\\/]\.(git|agents|vs)([\\/]|$)' } |
-        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+    $targetDirs = Get-ChildItem -Path $rootDir -Include "bin", "obj" -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '[\\/]\.(git|agents|vs)([\\/]|$)' }
+
+    foreach ($dir in $targetDirs) {
+        if (Test-Path $dir.FullName) {
+            try {
+                Remove-Item -Path $dir.FullName -Recurse -Force -ErrorAction Stop
+            } catch {
+                Start-Sleep -Milliseconds 250
+                Remove-Item -Path $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
 
     if (Test-Path $distDir) {
-        Remove-Item -Path (Join-Path $distDir "*") -Recurse -Force -ErrorAction SilentlyContinue
+        try {
+            Remove-Item -Path (Join-Path $distDir "*") -Recurse -Force -ErrorAction Stop
+        } catch {
+            Start-Sleep -Milliseconds 250
+            Remove-Item -Path (Join-Path $distDir "*") -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 
     if ($Clean -and -not $isPackaging -and -not $Run) {

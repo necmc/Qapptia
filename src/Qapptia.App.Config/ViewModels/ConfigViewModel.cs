@@ -345,8 +345,8 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                 if (result.Status == UpdateCheckStatus.UpdateAvailable && result.LatestRelease != null)
                 {
                     IsUpdateAvailable = true;
-                    DownloadUrl = !string.IsNullOrWhiteSpace(result.LatestRelease.DownloadUrl)
-                        ? result.LatestRelease.DownloadUrl
+                    DownloadUrl = !string.IsNullOrWhiteSpace(result.LatestRelease.SiteDownload)
+                        ? result.LatestRelease.SiteDownload
                         : Constants.DefaultDownloadUrl;
                     UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateAvailableFormat, result.LatestRelease.Version);
                     UpdateButtonText = ConfigConstants.UpdateButtonDownload;
@@ -373,13 +373,8 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                 }
                 else
                 {
-                    IsUpdateAvailable = false;
-                    DownloadUrl = null;
                     UpdateStatusMessage = result.ErrorMessage ?? ConfigConstants.UpdateStatusConnectError;
                     UpdateButtonText = ConfigConstants.UpdateButtonRetry;
-
-                    InMemoryUpdateStateStore.Clear();
-                    BroadcastUpdateNotification(new UpdateClearedNotification());
                 }
             });
         }
@@ -387,13 +382,8 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                IsUpdateAvailable = false;
-                DownloadUrl = null;
                 UpdateStatusMessage = ConfigConstants.UpdateStatusServerError;
                 UpdateButtonText = ConfigConstants.UpdateButtonRetry;
-
-                InMemoryUpdateStateStore.Clear();
-                BroadcastUpdateNotification(new UpdateClearedNotification());
             });
             Serilog.Log.Error(ex, "Error comprobando actualizaciones desde Config");
         }
@@ -450,7 +440,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         {
             try
             {
-                await Task.Delay(Constants.UpdateCheckCooldownMs).ConfigureAwait(false);
+                await Task.Delay(Constants.UpdateTimingManualCooldownMs).ConfigureAwait(false);
             }
             catch
             {

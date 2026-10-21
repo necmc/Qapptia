@@ -57,7 +57,8 @@ internal static class Program
                 return;
             }
 
-            Log.Information("Iniciando host de App.Capture en {OS}...", Environment.OSVersion);
+            Log.Information("--------------------------------------------------------------------------------");
+            Log.Information(">>> INICIO DE INSTANCIA: App.Capture (PID: {ProcessId}, Versión: {Version}) <<<", Environment.ProcessId, Qapptia.Core.Constants.AppVersion);
             using var host = BuildHost(args);
             var appLogger = host.Services.GetRequiredService<Serilog.ILogger>();
 

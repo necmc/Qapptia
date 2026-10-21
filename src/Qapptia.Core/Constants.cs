@@ -87,20 +87,30 @@ public static class Constants
     public const string ArgHelp = "--help";
 
     // URLs de servicios web, descargas y apoyo al proyecto
-    public const string DefaultSponsorUrl = "https://localhost:8080/sponsor";
-    public const string DefaultDownloadUrl = "https://localhost:8080/download";
-    public const string DefaultVersionApiUrl = "https://localhost:8080/api/version";
-    public const int DefaultHttpTimeoutMs = 5000;
+#if DEBUG
+    public const string DefaultSponsorUrl = "http://localhost:5050/sponsor";
+    public const string DefaultDownloadUrl = "http://localhost:5050/download";
+    public const string DefaultVersionApiUrl = "http://localhost:8080/api/v1/version";
+#else
+    public const string DefaultSponsorUrl = "https://qapptia.com/sponsor";
+    public const string DefaultDownloadUrl = "https://qapptia.com/download";
+    public const string DefaultVersionApiUrl = "https://qapptia.com/api/v1/version";
+#endif
+    public const int DefaultHttpTimeoutMs = 15000;
     public const int DefaultIpcTimeoutMs = 1000;
     public const int QuickIpcTimeoutMs = 800;
-    public const int StartupUpdateCheckDelayMs = 3000;
-    public const int StartupUpdateCheckMaxJitterMs = 15000;
-    public const int UpdateCheckCooldownMs = 2000;
     public const int SponsorCooldownMs = 2000;
-    public static readonly TimeSpan PeriodicUpdateCheckInterval = TimeSpan.FromHours(24);
-    public static readonly TimeSpan PeriodicUpdateCheckMaxJitter = TimeSpan.FromMinutes(30);
-    public static readonly TimeSpan FailedUpdateCheckRetryInterval = TimeSpan.FromMinutes(30);
-    public static readonly TimeSpan FailedUpdateCheckRetryMaxJitter = TimeSpan.FromMinutes(5);
+
+    // Temporización y políticas de comprobación de actualizaciones 
+    public const int UpdateTimingStartupDelayMs = 3000;
+    public const int UpdateTimingStartupMaxJitterMs = 15000;
+    public const int UpdateTimingManualCooldownMs = 2000;
+    public static readonly TimeSpan UpdateTimingPeriodicInterval = TimeSpan.FromHours(24);
+    public static readonly TimeSpan UpdateTimingPeriodicMaxJitter = TimeSpan.FromMinutes(30);
+    public static readonly int[] UpdateTimingServerUnavailableBackoffMinutes = [30, 60, 120, 240, 480];
+    public static readonly TimeSpan UpdateTimingServerUnavailableRetryMaxJitter = TimeSpan.FromMinutes(5);
+    public static readonly int[] UpdateTimingNoInternetBackoffHours = [1, 2, 4, 8];
+    public static readonly TimeSpan UpdateTimingNoInternetMaxJitter = TimeSpan.FromMinutes(5);
 
     // Claves de iconos del sistema
     public const string IconInfo = "IconInfo";
@@ -154,6 +164,7 @@ public static class Constants
     public const string UpdateErrorTimeout = "El servidor no responde, tiempo de espera agotado.";
     public const string UpdateErrorUnrecognizedResponse = "No se pudo interpretar la respuesta del servidor.";
     public const string UpdateErrorConnectionFailed = "No se pudo conectar con el servidor.";
+    public const string UpdateErrorNoInternet = "Sin conexión a Internet.";
 
 #if DEBUG
     public static string DefaultConfigPath => Path.Combine(AppContext.BaseDirectory, ConfigFileName);

@@ -1,6 +1,8 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
+using System.Security.Authentication;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -44,17 +46,59 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
         }
         else
         {
-            _httpClient = new HttpClient
-            {
-                Timeout = TimeSpan.FromMilliseconds(Constants.DefaultHttpTimeoutMs)
-            };
-            _httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(Constants.AppName, _currentVersion));
+            _httpClient = CreateDefaultHttpClient(_currentVersion);
             _disposeHttpClient = true;
         }
     }
 
+    private static HttpClient CreateDefaultHttpClient(string currentVersion)
+    {
+        var handler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            ConnectTimeout = TimeSpan.FromMilliseconds(Constants.DefaultHttpTimeoutMs),
+            SslOptions = new SslClientAuthenticationOptions
+            {
+                EnabledSslProtocols = GetSupportedSslProtocols()
+            }
+        };
+
+        var client = new HttpClient(handler, disposeHandler: true)
+        {
+            Timeout = TimeSpan.FromMilliseconds(Constants.DefaultHttpTimeoutMs)
+        };
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(Constants.AppName, currentVersion));
+        return client;
+    }
+
+    private static SslProtocols GetSupportedSslProtocols()
+    {
+        if (OperatingSystem.IsWindows() && !OperatingSystem.IsWindowsVersionAtLeast(10))
+        {
+            // En Windows 7, 8 y 8.1 (NT 6.1 a 6.3), Schannel no soporta TLS 1.3
+            // y falla con SEC_E_UNSUPPORTED_FUNCTION (0x80090302) si se solicita.
+            return SslProtocols.Tls12;
+        }
+
+        return SslProtocols.Tls12 | SslProtocols.Tls13;
+    }
+
     public async Task<UpdateCheckResult> CheckForUpdatesAsync(bool forceCheck = false, CancellationToken ct = default)
     {
+        try
+        {
+            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+            {
+                _logger.Information("Sin conexión de red activa detectada localmente al consultar actualizaciones.");
+                return UpdateCheckResult.NoInternet(_currentVersion, Constants.UpdateErrorNoInternet);
+            }
+        }
+        catch
+        {
+            // Continuar normalmente si el entorno restringe NetworkInterface
+        }
+
         try
         {
             _logger.Debug("Iniciando consulta de actualización a {Url} (Versión local: {Version})...", _endpointUrl, _currentVersion);
@@ -66,7 +110,7 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
             {
                 _logger.Warning("El servidor de actualizaciones respondió con código {StatusCode}", response.StatusCode);
                 var errorMsg = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_serverUnavailableFormat, (int)response.StatusCode);
-                return UpdateCheckResult.Failed(_currentVersion, errorMsg);
+                return UpdateCheckResult.ServerUnavailable(_currentVersion, errorMsg);
             }
 
             var jsonContent = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
@@ -92,6 +136,35 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
 
             if (remoteSemver > localSemver)
             {
+                if (!releaseDto.IsEnabled)
+                {
+                    _logger.Debug("Nueva versión {RemoteVersion} detectada pero se encuentra deshabilitada en el servidor.", remoteSemver);
+                    return UpdateCheckResult.UpToDate(_currentVersion, releaseDto);
+                }
+
+                if (releaseDto.Platform != null)
+                {
+                    bool isAvailableForCurrentPlatform = false;
+                    if (OperatingSystem.IsWindows())
+                    {
+                        isAvailableForCurrentPlatform = releaseDto.Platform.Windows?.IsAvailable ?? false;
+                    }
+                    else if (OperatingSystem.IsLinux())
+                    {
+                        isAvailableForCurrentPlatform = releaseDto.Platform.Linux?.IsAvailable ?? false;
+                    }
+                    else if (OperatingSystem.IsMacOS())
+                    {
+                        isAvailableForCurrentPlatform = releaseDto.Platform.Macos?.IsAvailable ?? false;
+                    }
+
+                    if (!isAvailableForCurrentPlatform)
+                    {
+                        _logger.Information("Nueva versión detectada ({RemoteVersion}), pero aún no está disponible para la plataforma actual.", remoteSemver);
+                        return UpdateCheckResult.UpToDate(_currentVersion, releaseDto);
+                    }
+                }
+
                 _logger.Information("Nueva versión detectada: {NewVersion} (Actual: {LocalVersion})", remoteSemver, localSemver);
                 return UpdateCheckResult.UpdateAvailable(_currentVersion, releaseDto);
             }
@@ -99,17 +172,17 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
             _logger.Debug("Qapptia está actualizado (Local: {LocalVersion}, Servidor: {RemoteVersion}).", localSemver, remoteSemver);
             return UpdateCheckResult.UpToDate(_currentVersion, releaseDto);
         }
-        catch (TimeoutException)
+        catch (TimeoutException ex)
         {
-            _logger.Warning("Tiempo de espera agotado al consultar el servidor de actualizaciones en {Url}.", _endpointUrl);
-            return UpdateCheckResult.Failed(_currentVersion, Constants.UpdateErrorTimeout);
+            _logger.Warning(ex, "Tiempo de espera agotado al consultar el servidor de actualizaciones en {Url}.", _endpointUrl);
+            return UpdateCheckResult.ServerUnavailable(_currentVersion, Constants.UpdateErrorTimeout);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
             if (!ct.IsCancellationRequested)
             {
-                _logger.Warning("Tiempo de espera agotado al consultar el servidor de actualizaciones en {Url}.", _endpointUrl);
-                return UpdateCheckResult.Failed(_currentVersion, Constants.UpdateErrorTimeout);
+                _logger.Warning(ex, "Tiempo de espera agotado al consultar el servidor de actualizaciones en {Url}.", _endpointUrl);
+                return UpdateCheckResult.ServerUnavailable(_currentVersion, Constants.UpdateErrorTimeout);
             }
 
             _logger.Debug("La comprobación de actualización fue cancelada.");
@@ -122,9 +195,55 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.Warning(ex, "Error al verificar actualizaciones en {Url}", _endpointUrl);
-            return UpdateCheckResult.Failed(_currentVersion, Constants.UpdateErrorConnectionFailed);
+            if (IsNoInternetException(ex))
+            {
+                _logger.Warning(ex, "Sin conexión a Internet al consultar {Url}.", _endpointUrl);
+                return UpdateCheckResult.NoInternet(_currentVersion, Constants.UpdateErrorNoInternet);
+            }
+
+            _logger.Warning(ex, "Error al verificar actualizaciones en {Url}: {Message}", _endpointUrl, ex.Message);
+            return UpdateCheckResult.ServerUnavailable(_currentVersion, Constants.UpdateErrorConnectionFailed);
         }
+    }
+
+    private static bool IsNoInternetException(Exception ex)
+    {
+        try
+        {
+            if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
+            {
+                return true;
+            }
+        }
+        catch
+        {
+            // Continuar con análisis de sockets si el entorno restringe NetworkInterface
+        }
+
+        var current = ex;
+        while (current != null)
+        {
+            if (current is System.Net.Sockets.SocketException socketEx)
+            {
+                if (socketEx.SocketErrorCode is System.Net.Sockets.SocketError.NetworkDown
+                    or System.Net.Sockets.SocketError.NetworkUnreachable
+                    or System.Net.Sockets.SocketError.HostUnreachable
+                    or System.Net.Sockets.SocketError.HostNotFound
+                    or System.Net.Sockets.SocketError.NoData)
+                {
+                    return true;
+                }
+            }
+
+            if (current is HttpRequestException httpEx && httpEx.HttpRequestError == HttpRequestError.NameResolutionError)
+            {
+                return true;
+            }
+
+            current = current.InnerException;
+        }
+
+        return false;
     }
 
     public void Dispose()

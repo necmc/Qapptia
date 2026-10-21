@@ -25,7 +25,7 @@ public sealed class PeriodicUpdateCoordinatorTests
     [Fact]
     public async Task StartShouldExecuteInitialCheckAndFireEvent()
     {
-        var release = new ReleaseInfoDto { Version = "99.0.0", DownloadUrl = "https://example.com/dl" };
+        var release = new ReleaseInfoDto { Version = "99.0.0", SiteDownload = "https://example.com/dl" };
         var expectedResult = UpdateCheckResult.UpdateAvailable("2.0.0", release);
 
         var service = new MockUpdateCheckService(_ => Task.FromResult(expectedResult));
@@ -125,6 +125,56 @@ public sealed class PeriodicUpdateCoordinatorTests
 
         coordinator.Start();
         Assert.True(coordinator.IsRunning);
+
+        coordinator.Stop();
+        Assert.False(coordinator.IsRunning);
+    }
+
+    [Fact]
+    public async Task StartWhenNoInternetShouldFireEventAndContinue()
+    {
+        var expectedResult = UpdateCheckResult.NoInternet("2.0.0", Constants.UpdateErrorNoInternet);
+
+        var service = new MockUpdateCheckService(_ => Task.FromResult(expectedResult));
+        using var coordinator = new PeriodicUpdateCoordinator(service);
+
+        var tcs = new TaskCompletionSource<UpdateCheckResult>();
+        coordinator.CheckCompleted += result => tcs.TrySetResult(result);
+
+        coordinator.Start(TimeSpan.FromMilliseconds(10));
+        Assert.True(coordinator.IsRunning);
+
+        var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(2000, TestContext.Current.CancellationToken));
+        Assert.Same(tcs.Task, completedTask);
+
+        var result = await tcs.Task;
+        Assert.Equal(UpdateCheckStatus.NoInternet, result.Status);
+        Assert.Equal(Constants.UpdateErrorNoInternet, result.ErrorMessage);
+
+        coordinator.Stop();
+        Assert.False(coordinator.IsRunning);
+    }
+
+    [Fact]
+    public async Task StartWhenServerUnavailableShouldFireEventAndContinue()
+    {
+        var expectedResult = UpdateCheckResult.ServerUnavailable("2.0.0", "Servidor no disponible (503).");
+
+        var service = new MockUpdateCheckService(_ => Task.FromResult(expectedResult));
+        using var coordinator = new PeriodicUpdateCoordinator(service);
+
+        var tcs = new TaskCompletionSource<UpdateCheckResult>();
+        coordinator.CheckCompleted += result => tcs.TrySetResult(result);
+
+        coordinator.Start(TimeSpan.FromMilliseconds(10));
+        Assert.True(coordinator.IsRunning);
+
+        var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(2000, TestContext.Current.CancellationToken));
+        Assert.Same(tcs.Task, completedTask);
+
+        var result = await tcs.Task;
+        Assert.Equal(UpdateCheckStatus.ServerUnavailable, result.Status);
+        Assert.Equal("Servidor no disponible (503).", result.ErrorMessage);
 
         coordinator.Stop();
         Assert.False(coordinator.IsRunning);

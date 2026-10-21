@@ -38,7 +38,7 @@ public sealed class UpdateCheckBackgroundService : BackgroundService
         if (result.Status == UpdateCheckStatus.UpdateAvailable && result.LatestRelease != null)
         {
             _logger.Information("Nueva versión de Qapptia disponible: {Version}", result.LatestRelease.Version);
-            InMemoryUpdateStateStore.SetUpdate(result.LatestRelease.Version, result.LatestRelease.DownloadUrl);
+            InMemoryUpdateStateStore.SetUpdate(result.LatestRelease.Version, result.LatestRelease.SiteDownload);
 
             var message = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateMessageFormat, result.LatestRelease.Version);
             _trayIconService?.ShowNotification(
@@ -56,7 +56,7 @@ public sealed class UpdateCheckBackgroundService : BackgroundService
                         new Qapptia.Core.Ipc.UpdateAvailableNotification
                         {
                             Version = result.LatestRelease.Version,
-                            DownloadUrl = result.LatestRelease.DownloadUrl
+                            DownloadUrl = result.LatestRelease.SiteDownload
                         },
                         timeoutMs: Constants.DefaultIpcTimeoutMs).ConfigureAwait(false);
                 }
@@ -66,7 +66,7 @@ public sealed class UpdateCheckBackgroundService : BackgroundService
                 }
             });
         }
-        else
+        else if (result.Status == UpdateCheckStatus.UpToDate)
         {
             InMemoryUpdateStateStore.Clear();
             _ = Task.Run(async () =>

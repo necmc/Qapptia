@@ -112,6 +112,12 @@ Name: "{autodesktop}\Qapptia"; Filename: "{app}\Qapptia.exe"; IconFilename: "{ap
 [Registry]
 Root: HKA; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Qapptia"; ValueData: """{app}\Qapptia.exe"" --capture"; Flags: uninsdeletevalue; Tasks: autostart
 
+; Compatibilidad TLS 1.2 para Windows 7 / 8.x (Schannel y WinHttp)
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client"; ValueType: dword; ValueName: "DisabledByDefault"; ValueData: "0"; Flags: createvalueifdoesntexist; Check: ShouldConfigureTls12
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client"; ValueType: dword; ValueName: "Enabled"; ValueData: "1"; Flags: createvalueifdoesntexist; Check: ShouldConfigureTls12
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp"; ValueType: dword; ValueName: "DefaultSecureProtocols"; ValueData: "$00000800"; Flags: createvalueifdoesntexist; Check: ShouldConfigureTls12
+Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp"; ValueType: dword; ValueName: "DefaultSecureProtocols"; ValueData: "$00000800"; Flags: createvalueifdoesntexist; Check: ShouldConfigureTls12
+
 [Run]
 Filename: "{app}\Qapptia.exe"; Description: "{cm:LaunchProgram,Qapptia}"; Flags: nowait postinstall skipifsilent
 
@@ -759,6 +765,15 @@ begin
       Exit;
     end;
   end;
+end;
+
+function ShouldConfigureTls12: Boolean;
+var
+  Version: TWindowsVersion;
+begin
+  GetWindowsVersionEx(Version);
+  // Aplica en Windows 7 y 8.x (NT 6.1 a 6.3) cuando el instalador cuenta con privilegios administrativos
+  Result := IsAdmin and (Version.Major = 6) and (Version.Minor >= 1);
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

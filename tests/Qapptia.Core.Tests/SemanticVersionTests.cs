@@ -50,6 +50,8 @@ public class SemanticVersionTests
     [InlineData("2.0.0", "2.0.0-beta", 1)] // Versión normal es mayor que pre-release
     [InlineData("2.0.0-beta", "2.0.0-alpha", 1)]
     [InlineData("2.0.0-rc.1", "2.0.0-beta.2", 1)]
+    [InlineData("2.0.0-beta.2", "2.0.0-beta", 1)]
+    [InlineData("2.0.0-beta", "2.0.0-beta.2", -1)]
     [InlineData("2.0.0-alpha", "2.0.0-beta", -1)]
     public void CompareToExpectedRelation(string versionA, string versionB, int expectedSign)
     {

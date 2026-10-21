@@ -110,7 +110,7 @@ public sealed class EditorViewModelUpdateTests : IDisposable
     [Fact]
     public async Task EditorViewModelAutonomousRelayWhenCaptureInactiveShouldDetectUpdateAndMutateIcon()
     {
-        var release = new ReleaseInfoDto { Version = "99.0.0", DownloadUrl = "https://example.com/dl" };
+        var release = new ReleaseInfoDto { Version = "99.0.0", SiteDownload = "https://example.com/dl" };
         var expectedResult = UpdateCheckResult.UpdateAvailable("2.0.0", release);
 
         var updateServiceMock = new Mock<IUpdateCheckService>();
@@ -166,5 +166,33 @@ public sealed class EditorViewModelUpdateTests : IDisposable
         vm.HasPendingUpdate.Should().BeFalse();
         vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconInfo);
         vm.InfoButtonToolTip.Should().Be(Qapptia.Core.Constants.ToolTipAbout);
+    }
+
+    [Fact]
+    public void EditorViewModelWhenCoordinatorFailsShouldRetainExistingPendingUpdateWithoutClearing()
+    {
+        InMemoryUpdateStateStore.SetUpdate("2.1.0", "https://example.com/download");
+
+        var updateServiceMock = new Mock<IUpdateCheckService>();
+        updateServiceMock.Setup(s => s.CheckForUpdatesAsync(It.IsAny<bool>(), It.IsAny<System.Threading.CancellationToken>()))
+            .ReturnsAsync(UpdateCheckResult.ServerUnavailable("2.0.0", "Timeout"));
+
+        using var vm = new EditorViewModel(
+            _stateServiceMock.Object,
+            _testDir,
+            _fontProviderMock.Object,
+            shellService: _shellServiceMock.Object,
+            updateCheckService: updateServiceMock.Object,
+            uiDispatcher: action => action(),
+            queryIpcUpdateOnStartup: false);
+
+        // Disparamos un chequeo fallido en el coordinador
+        var method = typeof(EditorViewModel).GetMethod("OnCoordinatorCheckCompleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        method?.Invoke(vm, new object[] { UpdateCheckResult.ServerUnavailable("2.0.0", "Timeout") });
+
+        // La alerta debe seguir activa; no se debe haber desalertado al usuario
+        vm.HasPendingUpdate.Should().BeTrue();
+        InMemoryUpdateStateStore.HasUpdate.Should().BeTrue();
+        InMemoryUpdateStateStore.Current?.Version.Should().Be("2.1.0");
     }
 }

@@ -64,6 +64,9 @@ public sealed class Program
                 return;
             }
 
+            Log.Information("--------------------------------------------------------------------------------");
+            Log.Information(">>> INICIO DE INSTANCIA: App.Editor (PID: {ProcessId}, Versión: {Version}) <<<", Environment.ProcessId, Qapptia.Core.Constants.AppVersion);
+
             var dispatcher = new IpcMessageDispatcher(
                 (msg, ct) =>
                 {

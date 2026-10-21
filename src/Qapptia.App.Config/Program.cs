@@ -20,7 +20,6 @@ sealed class Program
     {
         var logDir = Qapptia.Core.Constants.DefaultLogDirectory;
         using var _log = LoggingBootstrap.ConfigureGlobal(logDir, LogEventLevel.Information, "config");
-        Log.Information("Qapptia Config App iniciada");
 
         using var guard = new MutexSingleInstanceGuard(IpcChannels.Config);
         if (!guard.Acquire())
@@ -38,6 +37,9 @@ sealed class Program
             }
             return;
         }
+
+        Log.Information("--------------------------------------------------------------------------------");
+        Log.Information(">>> INICIO DE INSTANCIA: App.Config (PID: {ProcessId}, Versión: {Version}) <<<", Environment.ProcessId, Qapptia.Core.Constants.AppVersion);
 
         var dispatcher = new IpcMessageDispatcher(
             (msg, ct) =>

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +18,12 @@ public enum UpdateCheckStatus
     /// <summary>Existe una nueva versión disponible superior a la actual.</summary>
     UpdateAvailable,
 
+    /// <summary>El servidor remoto no está disponible o respondió con un código de error HTTP (5xx / 4xx).</summary>
+    ServerUnavailable,
+
+    /// <summary>El equipo local no cuenta con conexión a Internet activa o la red está inaccesible.</summary>
+    NoInternet,
+
     /// <summary>No se pudo conectar con el servidor o expiró el tiempo de espera.</summary>
     ConnectionFailed,
 
@@ -32,26 +40,95 @@ public sealed class ReleaseInfoDto
     [JsonPropertyName("version")]
     public string Version { get; set; } = string.Empty;
 
-    [JsonPropertyName("releaseNotes")]
-    public string? ReleaseNotes { get; set; }
-
-    [JsonPropertyName("checksum")]
-    public string? Checksum { get; set; }
+    [JsonPropertyName("isEnabled")]
+    public bool IsEnabled { get; set; } = true;
 
     [JsonPropertyName("publishedAt")]
     public string? PublishedAt { get; set; }
 
-    [JsonPropertyName("downloadUrl")]
-    public string? DownloadUrl { get; set; }
+    [JsonPropertyName("siteDownload")]
+    public string? SiteDownload { get; set; }
 
-    [JsonPropertyName("sponsorUrl")]
-    public string? SponsorUrl { get; set; }
+    [JsonPropertyName("siteSponsor")]
+    public string? SiteSponsor { get; set; }
+
+    [JsonPropertyName("siteRepositoryGH")]
+    public string? SiteRepositoryGH { get; set; }
+
+    [JsonPropertyName("changelog")]
+    public List<string>? Changelog { get; set; }
+
+    [JsonPropertyName("platform")]
+    public PlatformContainerDto? Platform { get; set; }
 
     [JsonPropertyName("isCritical")]
     public bool? IsCritical { get; set; }
 
     [JsonPropertyName("minSupportedVersion")]
     public string? MinSupportedVersion { get; set; }
+}
+
+/// <summary>
+/// Contenedor de plataformas disponibles para la versión.
+/// </summary>
+public sealed class PlatformContainerDto
+{
+    [JsonPropertyName("windows")]
+    public PlatformDetailDto? Windows { get; set; }
+
+    [JsonPropertyName("linux")]
+    public PlatformDetailDto? Linux { get; set; }
+
+    [JsonPropertyName("macos")]
+    public PlatformDetailDto? Macos { get; set; }
+}
+
+/// <summary>
+/// Detalle de disponibilidad y variantes para un sistema operativo.
+/// </summary>
+public sealed class PlatformDetailDto
+{
+    [JsonPropertyName("isAvailable")]
+    public bool IsAvailable { get; set; }
+
+    [JsonPropertyName("variants")]
+    public VariantMapDto? Variants { get; set; }
+}
+
+/// <summary>
+/// Mapeo de variantes de descarga por plataforma.
+/// </summary>
+public sealed class VariantMapDto
+{
+    [JsonPropertyName("installer")]
+    public VariantDetailDto? Installer { get; set; }
+
+    [JsonPropertyName("portable")]
+    public VariantDetailDto? Portable { get; set; }
+
+    [JsonPropertyName("portableLight")]
+    public VariantDetailDto? PortableLight { get; set; }
+}
+
+/// <summary>
+/// Información detallada de un archivo o variante binaria.
+/// </summary>
+public sealed class VariantDetailDto
+{
+    [JsonPropertyName("filename")]
+    public string? Filename { get; set; }
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    [JsonPropertyName("alternativeMirrorUrl")]
+    public string? AlternativeMirrorUrl { get; set; }
+
+    [JsonPropertyName("sizeMB")]
+    public double? SizeMB { get; set; }
+
+    [JsonPropertyName("sha256")]
+    public string? Sha256 { get; set; }
 }
 
 /// <summary>
@@ -74,6 +151,12 @@ public sealed class UpdateCheckResult
 
     public static UpdateCheckResult Failed(string currentVersion, string errorMessage) =>
         new() { Status = UpdateCheckStatus.ConnectionFailed, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
+
+    public static UpdateCheckResult ServerUnavailable(string currentVersion, string errorMessage) =>
+        new() { Status = UpdateCheckStatus.ServerUnavailable, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
+
+    public static UpdateCheckResult NoInternet(string currentVersion, string errorMessage) =>
+        new() { Status = UpdateCheckStatus.NoInternet, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
 
     public static UpdateCheckResult Invalid(string currentVersion, string errorMessage) =>
         new() { Status = UpdateCheckStatus.InvalidPayload, CurrentVersion = currentVersion, ErrorMessage = errorMessage };

@@ -53,7 +53,7 @@
     <StreamGeometry x:Key="IconSpinner">M 12 2 A 10 10 0 0 1 22 12 A 10 10 0 0 1 12 22 A 10 10 0 0 1 2 12 L 4.5 12 A 7.5 7.5 0 0 0 12 19.5 A 7.5 7.5 0 0 0 19.5 12 A 7.5 7.5 0 0 0 12 4.5 Z</StreamGeometry>
 
     <!-- ====================================================================
-         Iconos de Apoyo / Donación Multicolores (Variantes Aleatorias)
+         Iconos de Apoyo / Colaboración Multicolores (Variantes Aleatorias)
          ==================================================================== -->
     <!-- Icono Sponsor 1: Taza de café con corazón y moneda -->
     <DrawingGroup x:Key="DrawingSponsorCoffeeHeart">
