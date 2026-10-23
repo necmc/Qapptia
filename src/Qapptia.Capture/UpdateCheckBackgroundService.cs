@@ -19,16 +19,19 @@ public sealed class UpdateCheckBackgroundService : BackgroundService
 
     private readonly PeriodicUpdateCoordinator _coordinator;
     private readonly ITrayIconService? _trayIconService;
+    private readonly IHostApplicationLifetime? _appLifetime;
     private readonly ILogger _logger;
 
     public UpdateCheckBackgroundService(
         IUpdateCheckService updateCheckService,
         ITrayIconService? trayIconService = null,
+        IHostApplicationLifetime? appLifetime = null,
         TimeProvider? timeProvider = null,
         ILogger? logger = null)
     {
         _logger = (logger ?? Log.Logger).ForContext<UpdateCheckBackgroundService>();
         _trayIconService = trayIconService;
+        _appLifetime = appLifetime;
         _coordinator = new PeriodicUpdateCoordinator(updateCheckService, timeProvider, _logger);
         _coordinator.CheckCompleted += OnCheckCompleted;
     }
@@ -89,6 +92,25 @@ public sealed class UpdateCheckBackgroundService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.Information("Servicio de verificación de actualizaciones en segundo plano iniciado.");
+
+        if (_appLifetime != null && !_appLifetime.ApplicationStarted.IsCancellationRequested)
+        {
+            var startedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var regStarted = _appLifetime.ApplicationStarted.Register(() => startedTcs.TrySetResult());
+            using var regStopping = stoppingToken.Register(() => startedTcs.TrySetCanceled());
+            try
+            {
+                await startedTcs.Task.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+
+        if (stoppingToken.IsCancellationRequested)
+            return;
+
         _coordinator.Start();
 
         try

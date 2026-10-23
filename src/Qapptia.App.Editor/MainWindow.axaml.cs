@@ -58,6 +58,7 @@ public partial class MainWindow : Window
             }
         };
 
+
         this.KeyDown += (s, e) =>
         {
             if (e.Key == Avalonia.Input.Key.Escape && DataContext is EditorViewModel currentVm && currentVm.Help.IsVisible)
@@ -83,6 +84,15 @@ public partial class MainWindow : Window
             {
                 Program.IsEditorReady = true;
             }, Avalonia.Threading.DispatcherPriority.Render);
+
+            // Iniciar comprobación de actualizaciones una vez que la ventana esté completamente renderizada e inactiva
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (DataContext is EditorViewModel vm)
+                {
+                    vm.InitializeUpdateChecking();
+                }
+            }, Avalonia.Threading.DispatcherPriority.Background);
         };
     }
 

@@ -132,7 +132,7 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         IUpdateCheckService? updateCheckService = null,
         TimeProvider? timeProvider = null,
         Action<Action>? uiDispatcher = null,
-        bool queryIpcUpdateOnStartup = true,
+        bool queryIpcUpdateOnStartup = false,
         IConfigService? configService = null,
         EditorHelpViewModel? helpViewModel = null)
     {
@@ -604,12 +604,14 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         PendingUpdateUrl = null;
     }
 
-    private void InitializeUpdateChecking()
+    public void InitializeUpdateChecking()
     {
         _ = Task.Run(async () =>
         {
+            bool isCaptureAlive = _captureAppService.IsRunning || await _captureAppService.CheckStatusAsync().ConfigureAwait(false);
             bool captureResponded = false;
-            if (_captureAppService.IsRunning)
+
+            if (isCaptureAlive)
             {
                 try
                 {
@@ -637,7 +639,7 @@ public partial class EditorViewModel : ObservableObject, IDisposable
             }
 
             // Si Capture no está corriendo o no respondió: el Editor asume la responsabilidad transversal
-            if (!captureResponded && !_captureAppService.IsRunning && _updateCoordinator != null)
+            if (!captureResponded && !isCaptureAlive && _updateCoordinator != null)
             {
                 _updateCoordinator.Start(TimeSpan.FromMilliseconds(Qapptia.Core.Constants.UpdateTimingStartupDelayMs));
             }
