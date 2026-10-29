@@ -6,7 +6,7 @@ namespace Qapptia.Core.Abstractions;
 
 /// <summary>
 /// Servicio para monitorear y controlar el ciclo de vida de la aplicación
-/// de captura en segundo plano (Qapptia.App.Capture).
+/// de captura en segundo plano (QapptiaCapture).
 /// </summary>
 public interface ICaptureAppService : IDisposable
 {

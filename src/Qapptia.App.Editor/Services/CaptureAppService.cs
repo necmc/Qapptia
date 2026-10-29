@@ -47,7 +47,7 @@ public sealed class CaptureAppService : ICaptureAppService
         }
         catch (Exception ex)
         {
-            _logger.Debug(ex, "Excepción al sondear estado de Qapptia.App.Capture");
+            _logger.Debug(ex, "Excepción al sondear estado de QapptiaCapture");
             isAlive = false;
         }
 
@@ -55,7 +55,7 @@ public sealed class CaptureAppService : ICaptureAppService
 
         if (wasRunning != isAlive)
         {
-            _logger.Information("Estado de Qapptia.App.Capture cambió a: {Status}", isAlive ? "Activo" : "Inactivo");
+            _logger.Information("Estado de QapptiaCapture cambió a: {Status}", isAlive ? "Activo" : "Inactivo");
             StatusChanged?.Invoke(this, isAlive);
         }
 
@@ -68,7 +68,7 @@ public sealed class CaptureAppService : ICaptureAppService
         bool isAlreadyActive = await CheckStatusAsync(ct).ConfigureAwait(false);
         if (isAlreadyActive)
         {
-            _logger.Information("Qapptia.App.Capture ya está activo. Enviando señal WakeUp...");
+            _logger.Information("QapptiaCapture ya está activo. Enviando señal WakeUp...");
             try
             {
                 await QapptiaIpcClient.SendAsync(
@@ -79,7 +79,7 @@ public sealed class CaptureAppService : ICaptureAppService
             }
             catch (Exception ex)
             {
-                _logger.Warning(ex, "No se pudo entregar WakeUpRequest a Qapptia.App.Capture");
+                _logger.Warning(ex, "No se pudo entregar WakeUpRequest a QapptiaCapture");
             }
             return true;
         }

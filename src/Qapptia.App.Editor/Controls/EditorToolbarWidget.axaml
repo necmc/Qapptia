@@ -425,7 +425,7 @@
                             Padding="4"
                             VerticalContentAlignment="Center">
                         <Panel Width="16" Height="16">
-                            <Image Source="avares://Qapptia.App.Editor/Assets/tray_icon.png" Width="16" Height="16" />
+                            <Image Source="avares://QapptiaEditor/Assets/tray_icon.png" Width="16" Height="16" />
                             <PathIcon Classes="warning-badge"
                                       Data="{StaticResource IconWarning}"
                                       IsVisible="{Binding !IsCaptureActive}"

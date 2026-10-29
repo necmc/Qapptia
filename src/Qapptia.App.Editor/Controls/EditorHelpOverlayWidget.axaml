@@ -197,7 +197,7 @@
                             <Border Grid.Row="0" Background="{DynamicResource M3SurfaceContainerHighestBrush}" BorderBrush="{DynamicResource M3OutlineVariantBrush}" BorderThickness="0,0,0,1" Padding="18,12" CornerRadius="14,14,0,0">
                                 <Grid ColumnDefinitions="Auto, *, Auto">
                                     <Border Grid.Column="0" Background="{DynamicResource M3SurfaceContainerBrush}" CornerRadius="8" Width="34" Height="34" Margin="0,0,12,0" VerticalAlignment="Center">
-                                        <Image Source="avares://Qapptia.App.Editor/Assets/tray_icon.png" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Image Source="avares://QapptiaEditor/Assets/tray_icon.png" Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                         <TextBlock Text="Estado del Capturador" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource M3OnSurfaceBrush}" />

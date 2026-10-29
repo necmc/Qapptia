@@ -30,7 +30,7 @@
     Inicia la aplicación al finalizar el proceso.
 
 .PARAMETER Configuration
-    Configuración de compilación (Release por defecto).
+    Configuración de compilación (Debug por defecto; Release al empaquetar).
 
 .PARAMETER Runtime
     Identificador de runtime de destino (win-x64 por defecto).
@@ -63,16 +63,64 @@ function Stop-ExistingQapptiaProcesses {
     $runningProcesses = @(Get-Process -Name "*Qapptia*" -ErrorAction SilentlyContinue)
     if ($runningProcesses.Count -gt 0) {
         $procList = ($runningProcesses | ForEach-Object { "$($_.ProcessName) (PID: $($_.Id))" }) -join ", "
-        Write-Host "Procesos previos de Qapptia detectados en ejecución: $procList. Cerrando..." -ForegroundColor Yellow
-        $runningProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
-
+        Write-Host "Procesos previos detectados en ejecución: $procList. Cerrando..." -ForegroundColor Yellow
         # Esperar activamente a que los procesos finalicen y liberen los descriptores en el kernel
         $timeoutSeconds = 5
         $sw = [System.Diagnostics.Stopwatch]::StartNew()
-        while ($sw.Elapsed.TotalSeconds -lt $timeoutSeconds) {
-            $remaining = @(Get-Process -Name "*Qapptia*" -ErrorAction SilentlyContinue)
-            if ($remaining.Count -eq 0) { break }
+        do {
+            $runningProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
             Start-Sleep -Milliseconds 100
+            $runningProcesses = @(Get-Process -Name "*Qapptia*" -ErrorAction SilentlyContinue)
+        } while ($runningProcesses.Count -gt 0 -and $sw.Elapsed.TotalSeconds -lt $timeoutSeconds)
+
+        if ($runningProcesses.Count -gt 0) {
+            $procList = ($runningProcesses | ForEach-Object { "$($_.ProcessName) (PID: $($_.Id))" }) -join ", "
+            throw "No se pudieron cerrar los procesos: $procList. Se cancela el build para evitar archivos bloqueados."
+        }
+    }
+}
+
+function Remove-BuildArtifact {
+    param (
+        [Parameter(Mandatory)]
+        [string]$Path,
+        [ValidateRange(1, 10)]
+        [int]$MaxAttempts = 2,
+        [ValidateRange(0, 10000)]
+        [int]$RetryDelayMs = 250
+    )
+
+    $targetPath = [System.IO.Path]::GetFullPath($Path)
+    $workspacePrefix = [System.IO.Path]::GetFullPath($rootDir).TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
+    if (-not $targetPath.StartsWith($workspacePrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Se rechaza la eliminación fuera del repositorio: $targetPath"
+    }
+
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        if (-not (Test-Path -LiteralPath $targetPath -ErrorAction Stop)) { return }
+        try {
+            Remove-Item -LiteralPath $targetPath -Recurse -Force -ErrorAction Stop
+            if (Test-Path -LiteralPath $targetPath -ErrorAction Stop) {
+                throw "La ruta sigue existiendo después de la eliminación."
+            }
+            return
+        } catch {
+            $failure = $_
+            $exception = $failure.Exception
+            $isFileLocked = $false
+            while ($null -ne $exception) {
+                # Win32 distingue los bloqueos compartidos (32) y de región (33).
+                if ($exception -is [System.IO.IOException] -and ($exception.HResult -band 0xFFFF) -in 32, 33) {
+                    $isFileLocked = $true
+                    break
+                }
+                $exception = $exception.InnerException
+            }
+
+            if (-not $isFileLocked -or $attempt -eq $MaxAttempts) {
+                throw "No se pudo eliminar '$targetPath' (intento $attempt de $MaxAttempts): $($failure.Exception.Message)"
+            }
+            Start-Sleep -Milliseconds $RetryDelayMs
         }
     }
 }
@@ -109,26 +157,19 @@ if ($isPackaging -or $Clean) {
     & dotnet build-server shutdown | Out-Null
     Start-Sleep -Milliseconds 400
 
-    $targetDirs = Get-ChildItem -Path $rootDir -Include "bin", "obj" -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+    $targetDirs = Get-ChildItem -Path $rootDir -Include "bin", "obj" -Recurse -Directory -Force -ErrorAction Stop |
         Where-Object { $_.FullName -notmatch '[\\/]\.(git|agents|vs)([\\/]|$)' }
 
     foreach ($dir in $targetDirs) {
-        if (Test-Path $dir.FullName) {
-            try {
-                Remove-Item -Path $dir.FullName -Recurse -Force -ErrorAction Stop
-            } catch {
-                Start-Sleep -Milliseconds 250
-                Remove-Item -Path $dir.FullName -Recurse -Force -ErrorAction SilentlyContinue
-            }
-        }
+        Remove-BuildArtifact -Path $dir.FullName
     }
 
-    if (Test-Path $distDir) {
-        try {
-            Remove-Item -Path (Join-Path $distDir "*") -Recurse -Force -ErrorAction Stop
-        } catch {
-            Start-Sleep -Milliseconds 250
-            Remove-Item -Path (Join-Path $distDir "*") -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $distDir -ErrorAction Stop) {
+        foreach ($artifact in Get-ChildItem -LiteralPath $distDir -Force -ErrorAction Stop) {
+            Remove-BuildArtifact -Path $artifact.FullName
+        }
+        if (@(Get-ChildItem -LiteralPath $distDir -Force -ErrorAction Stop).Count -gt 0) {
+            throw "La limpieza no pudo vaciar el directorio: $distDir"
         }
     }
 
@@ -141,25 +182,38 @@ if ($isPackaging -or $Clean) {
 # 2. Compilar solución
 Write-Host "`n[1/3] Compilando solución..." -ForegroundColor Yellow
 Stop-ExistingQapptiaProcesses
-dotnet build (Join-Path $rootDir "Qapptia.slnx") -c $Configuration
+dotnet build (Join-Path $rootDir "Qapptia.slnx") -c $Configuration -nodeReuse:false
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Falló la compilación de la solución."
     exit $LASTEXITCODE
 }
 
 # 3. Pruebas unitarias
+function Invoke-TestSuite {
+    param (
+        [string]$ProjectPath,
+        [string]$SuiteName
+    )
+
+    $testDll = Join-Path $rootDir "bin/$Configuration/Qapptia.$SuiteName.Tests.dll"
+    Stop-ExistingQapptiaProcesses
+    if (Test-Path -LiteralPath $testDll) {
+        dotnet exec $testDll
+    } else {
+        dotnet run --project $ProjectPath -c $Configuration --no-build
+    }
+
+    $testExitCode = $LASTEXITCODE
+    if ($testExitCode -ne 0) {
+        throw "Pruebas unitarias de $SuiteName fallidas (código de salida: $testExitCode)."
+    }
+}
+
 if (-not $NoTest) {
     Write-Host "`n[2/3] Ejecutando pruebas unitarias..." -ForegroundColor Yellow
-    dotnet run --project (Join-Path $rootDir "tests/Qapptia.Core.Tests/Qapptia.Core.Tests.csproj") -c $Configuration --no-build
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Pruebas unitarias de Core fallidas."
-        exit $LASTEXITCODE
-    }
-    dotnet run --project (Join-Path $rootDir "tests/Qapptia.Editor.Tests/Qapptia.Editor.Tests.csproj") -c $Configuration --no-build
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Pruebas unitarias de Editor fallidas."
-        exit $LASTEXITCODE
-    }
+    Invoke-TestSuite -ProjectPath (Join-Path $rootDir "tests/Qapptia.Core.Tests/Qapptia.Core.Tests.csproj") -SuiteName "Core"
+    Invoke-TestSuite -ProjectPath (Join-Path $rootDir "tests/Qapptia.Capture.Tests/Qapptia.Capture.Tests.csproj") -SuiteName "Capture"
+    Invoke-TestSuite -ProjectPath (Join-Path $rootDir "tests/Qapptia.Editor.Tests/Qapptia.Editor.Tests.csproj") -SuiteName "Editor"
 } else {
     Write-Host "`n[2/3] Pruebas unitarias omitidas." -ForegroundColor DarkGray
 }
@@ -305,21 +359,43 @@ function Build-InstallerPackage {
     $setupExeName = "$setupBaseName.exe"
     $setupFilePath = Join-Path $distDir $setupExeName
 
-    if (Test-Path $setupFilePath) {
-        Remove-Item $setupFilePath -Force
-    }
+    # Intentar eliminar el instalador previo asegurando que ningún descriptor quede retenido
+    Remove-BuildArtifact -Path $setupFilePath -MaxAttempts 3 -RetryDelayMs 400
 
     Write-Host "Compilando instalador con ISCC..." -ForegroundColor DarkGray
-    & $iscc /Q `
-        "/DAppVersion=$appVersion" `
-        "/DSourceDir=$SourceDir" `
-        "/DOutputDir=$distDir" `
-        "/DOutputBaseFilename=$setupBaseName" `
-        $issPath
 
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $setupFilePath)) {
-        Write-Error "Error al compilar el instalador con Inno Setup."
-        exit 1
+    # Compilación en directorio temporal aislado para evitar retención de descriptores PE
+    $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
+    $stagingDir = [System.IO.Path]::GetFullPath((Join-Path $tempRoot "Qapptia-ISCC-$([System.Guid]::NewGuid().ToString('N'))"))
+    if (-not $stagingDir.StartsWith($tempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Directorio temporal del instalador fuera de la ruta permitida: $stagingDir"
+    }
+    New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+    $stagedExePath = Join-Path $stagingDir $setupExeName
+
+    try {
+        & $iscc /Q `
+            "/DAppVersion=$appVersion" `
+            "/DSourceDir=$SourceDir" `
+            "/DOutputDir=$stagingDir" `
+            "/DOutputBaseFilename=$setupBaseName" `
+            $issPath
+
+        $installerExitCode = $LASTEXITCODE
+        if ($installerExitCode -ne 0) {
+            throw "Error al compilar el instalador con Inno Setup (código de salida: $installerExitCode)."
+        }
+        if (-not (Test-Path -LiteralPath $stagedExePath)) {
+            throw "Inno Setup no generó el instalador esperado: $stagedExePath"
+        }
+
+        # Mover el ejecutable compilado al directorio dist definitivo
+        Remove-BuildArtifact -Path $setupFilePath -MaxAttempts 3 -RetryDelayMs 400
+        Move-Item -LiteralPath $stagedExePath -Destination $setupFilePath -Force
+    } finally {
+        if (Test-Path -LiteralPath $stagingDir) {
+            Remove-Item -LiteralPath $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
 
     $setupItem = Get-Item $setupFilePath
@@ -368,6 +444,7 @@ if ($isPackaging) {
 # 5. Ejecución (-Run)
 if ($Run) {
     Write-Host "`n[Run] Iniciando aplicación..." -ForegroundColor Cyan
+    Stop-ExistingQapptiaProcesses
     if ($isPackaging) {
         $exeToRun = Join-Path $distAppDir "Qapptia.exe"
     } else {

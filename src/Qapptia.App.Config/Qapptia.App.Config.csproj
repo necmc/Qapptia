@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Qapptia.App.Config</RootNamespace>
+    <AssemblyName>QapptiaConfig</AssemblyName>
     <Product>Qapptia Config</Product>
     <Title>Qapptia Config</Title>
     <AssemblyTitle>Qapptia Config</AssemblyTitle>

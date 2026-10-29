@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Qapptia.App.Editor</RootNamespace>
+    <AssemblyName>QapptiaEditor</AssemblyName>
     <Product>Qapptia Editor</Product>
     <Title>Qapptia Editor</Title>
     <AssemblyTitle>Qapptia Editor</AssemblyTitle>

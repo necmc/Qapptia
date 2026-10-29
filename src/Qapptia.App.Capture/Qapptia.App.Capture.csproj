@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Qapptia.App.Capture</RootNamespace>
+    <AssemblyName>QapptiaCapture</AssemblyName>
     <Product>Qapptia Capture</Product>
     <Title>Qapptia Capture</Title>
     <AssemblyTitle>Qapptia Capture</AssemblyTitle>

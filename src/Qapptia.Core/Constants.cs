@@ -74,9 +74,9 @@ public static class Constants
 
     // Nombres de ejecutables de la suite
     public const string LauncherExecutableName = "Qapptia.exe";
-    public const string CaptureExecutableName = "Qapptia.App.Capture.exe";
-    public const string EditorExecutableName = "Qapptia.App.Editor.exe";
-    public const string ConfigExecutableName = "Qapptia.App.Config.exe";
+    public const string CaptureExecutableName = "QapptiaCapture.exe";
+    public const string EditorExecutableName = "QapptiaEditor.exe";
+    public const string ConfigExecutableName = "QapptiaConfig.exe";
 
     // Argumentos de línea de comandos
     public const string ArgEditor = "--editor";
