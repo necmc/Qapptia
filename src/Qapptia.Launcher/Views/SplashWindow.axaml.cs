@@ -170,7 +170,7 @@ public partial class SplashWindow : Window
             }
 
             // 4. Sondeo y validación granular de arranque del Editor (70% -> 85% -> 100%)
-            await WaitForEditorReadyGranularAsync(IpcChannels.Editor, Constants.SplashWaitTimeoutMs).ConfigureAwait(false);
+            await WaitForEditorReadyGranularAsync(launcher, IpcChannels.Editor, Constants.SplashWaitTimeoutMs).ConfigureAwait(false);
         }
         else if (plan.ShouldEnsureConfig)
         {
@@ -203,7 +203,7 @@ public partial class SplashWindow : Window
         await Task.Delay(Constants.SplashExitDelayMs).ConfigureAwait(false);
     }
 
-    private async Task WaitForEditorReadyGranularAsync(string channel, int timeoutMs)
+    private async Task WaitForEditorReadyGranularAsync(IProcessLauncher launcher, string channel, int timeoutMs)
     {
         var waitSw = Stopwatch.StartNew();
         bool acknowledged = false;
@@ -212,7 +212,9 @@ public partial class SplashWindow : Window
         {
             try
             {
-                var response = await QapptiaIpcClient.SendAsync(channel, new Ping(), timeoutMs: Constants.SplashIpcTimeoutMs).ConfigureAwait(false);
+                var response = launcher.IsInstanceActive(channel)
+                    ? await QapptiaIpcClient.SendAsync(channel, new Ping(), timeoutMs: Constants.SplashIpcTimeoutMs).ConfigureAwait(false)
+                    : null;
                 if (response is Pong)
                 {
                     UpdateProgress(Constants.CompleteProgressPercent, Constants.ProgressReady, forceImmediate: true);

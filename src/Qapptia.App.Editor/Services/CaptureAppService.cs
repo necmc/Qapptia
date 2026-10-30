@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Ipc;
+using Qapptia.Core.Platform;
 using Serilog;
 
 namespace Qapptia.App.Editor.Services;
@@ -37,13 +38,16 @@ public sealed class CaptureAppService : ICaptureAppService
 
         try
         {
-            var response = await QapptiaIpcClient.SendAsync(
-                IpcChannels.Capture,
-                new Ping(),
-                timeoutMs: 300,
-                ct).ConfigureAwait(false);
+            if (MutexSingleInstanceGuard.IsRunning(IpcChannels.Capture))
+            {
+                var response = await QapptiaIpcClient.SendAsync(
+                    IpcChannels.Capture,
+                    new Ping(),
+                    timeoutMs: 300,
+                    ct).ConfigureAwait(false);
 
-            isAlive = response is Pong;
+                isAlive = response is Pong;
+            }
         }
         catch (Exception ex)
         {

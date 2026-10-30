@@ -67,13 +67,10 @@
     <PackageVersion Include="Microsoft.Win32.SystemEvents" Version="10.0.0" />
     <PackageVersion Include="System.Drawing.Common" Version="10.0.0" />
     <!-- ============================================================
-         CLI parsing
-         ============================================================ -->
-    <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-    <!-- ============================================================
          Audio
          ============================================================ -->
-    <PackageVersion Include="NAudio" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Core" Version="2.2.1" />
+    <PackageVersion Include="NAudio.Wasapi" Version="2.2.1" />
     <!-- ============================================================
          Testing
          ============================================================ -->

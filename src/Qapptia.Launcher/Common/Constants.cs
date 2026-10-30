@@ -42,8 +42,8 @@ public static class Constants
     // Parámetros de temporización (milisegundos)
     public const int SplashMinimumDisplayMs = 800;
     public const int SplashWaitTimeoutMs = 20000;
-    public const int SplashPollIntervalMs = 40;
-    public const int SplashIpcTimeoutMs = 100;
+    public const int SplashPollIntervalMs = 250;
+    public const int SplashIpcTimeoutMs = 500;
     public const int SplashExitDelayMs = 250;
     public const int AnimationTimerIntervalMs = 16;
     public const int StagePacingDelayMs = 90;

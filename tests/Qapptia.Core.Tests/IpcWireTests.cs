@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 using Qapptia.Core.Ipc;
@@ -105,6 +106,62 @@ public class IpcWireTests
             var ack = Assert.IsType<Ack>(response);
             Assert.Equal(IpcMessageType.ThemeChanged, ack.OriginalType);
             Assert.Equal("light", receivedTheme);
+        }
+        finally
+        {
+            await server.StopAsync(TestContext.Current.CancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task QapptiaIpcClientShouldTimeOutWhenConnectedServerDoesNotRespond()
+    {
+        var pipeName = "test_timeout_" + Guid.NewGuid().ToString("N");
+        using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1,
+            PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var requestReceived = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var serverTask = Task.Run(async () =>
+        {
+            await server.WaitForConnectionAsync(cancellation.Token);
+            await IpcWire.ReadFrameAsync(server, cancellation.Token);
+            requestReceived.SetResult();
+            await Task.Delay(Timeout.Infinite, cancellation.Token);
+        }, TestContext.Current.CancellationToken);
+
+        try
+        {
+            var responseTask = QapptiaIpcClient.SendToPipeAsync(pipeName, new Ping(), timeoutMs: 200, ct: TestContext.Current.CancellationToken);
+            await requestReceived.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            var response = await responseTask.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            Assert.Null(response);
+        }
+        finally
+        {
+            cancellation.Cancel();
+            try { await serverTask; } catch (OperationCanceledException) { }
+        }
+    }
+
+    [Fact]
+    public async Task QapptiaIpcServerShouldContinueServingRepeatedConnections()
+    {
+        var pipeName = "test_repeated_" + Guid.NewGuid().ToString("N");
+        var logger = new LoggerConfiguration().CreateLogger();
+        var dispatcher = new IpcMessageDispatcher(
+            (_, _) => Task.FromResult<IpcMessage>(new Pong()), logger);
+        using var server = new QapptiaIpcServer(pipeName, pipeName, dispatcher, logger);
+        await server.StartAsync(TestContext.Current.CancellationToken);
+
+        try
+        {
+            for (var i = 0; i < 32; i++)
+            {
+                var response = await QapptiaIpcClient.SendToPipeAsync(pipeName, new Ping(),
+                    timeoutMs: 5000, ct: TestContext.Current.CancellationToken);
+                Assert.IsType<Pong>(response);
+            }
         }
         finally
         {

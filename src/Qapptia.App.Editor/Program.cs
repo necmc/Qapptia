@@ -14,6 +14,7 @@ using Qapptia.Core.Services;
 using Qapptia.Editor.Core;
 using Qapptia.Editor.Services;
 using Qapptia.UI.Components.Theme;
+using Qapptia.UI.Components;
 using Serilog;
 
 #if WINDOWS
@@ -243,6 +244,7 @@ public sealed class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithHardwareAcceleration(enabled: false)
 #if DEBUG
             .WithDeveloperTools()
 #endif

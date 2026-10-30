@@ -4,6 +4,7 @@ using Avalonia;
 using Qapptia.Core;
 using Qapptia.Core.Ipc;
 using Qapptia.Core.Launcher;
+using Qapptia.UI.Components;
 
 namespace Qapptia.Launcher;
 
@@ -53,5 +54,6 @@ public static class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithHardwareAcceleration(enabled: false)
             .WithInterFont();
 }

@@ -1,6 +1,9 @@
 ; Script de Inno Setup para Qapptia
 #define MyAppName "Qapptia"
 #define MyAppExeName "Qapptia.exe"
+#define EditorExeName "QapptiaEditor.exe"
+#define CaptureExeName "QapptiaCapture.exe"
+#define ConfigExeName "QapptiaConfig.exe"
 #define MyAppId "8B45E1B4-3F25-4A92-A746-3C62077DA820"
 #ifndef AppVersion
   #define AppVersion "1.0.0"
@@ -27,6 +30,7 @@ OutputDir={#OutputDir}
 OutputBaseFilename={#OutputBaseFilename}
 Compression=lzma2/ultra64
 SolidCompression=yes
+SetupMutex=QapptiaInstaller,Global\QapptiaInstaller,Global\QapptiaUninstaller
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
@@ -41,7 +45,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayIcon={app}\Qapptia.exe
 SetupIconFile=compiler:SetupClassicIcon.ico
-CloseApplications=force
+CloseApplications=yes
 RestartApplications=no
 
 [Languages]
@@ -91,7 +95,7 @@ Type: files; Name: "{app}\app\Qapptia.App.*"
 Type: files; Name: "{app}\Qapptia.App.*"
 
 [Files]
-Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs restartreplace
+Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [UninstallDelete]
 Type: files; Name: "{autodesktop}\{#MyAppName}.lnk"
@@ -122,7 +126,7 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings
 Root: HKLM; Subkey: "SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Internet Settings\WinHttp"; ValueType: dword; ValueName: "DefaultSecureProtocols"; ValueData: "$00000800"; Flags: createvalueifdoesntexist; Check: ShouldConfigureTls12
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent runascurrentuser
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent runascurrentuser; Check: CanLaunchInstalledApplication
 
 [Code]
 function GetCurrentProcessId: DWORD;
@@ -174,6 +178,21 @@ type
     szExeFile: array[0..259] of Char;
   end;
 
+  TStartupInfo32 = record
+    cb: DWORD;
+    lpReserved, lpDesktop, lpTitle: LongInt;
+    dwX, dwY, dwXSize, dwYSize: DWORD;
+    dwXCountChars, dwYCountChars, dwFillAttribute, dwFlags: DWORD;
+    wShowWindow, cbReserved2: Word;
+    lpReserved2: LongInt;
+    hStdInput, hStdOutput, hStdError: THandle;
+  end;
+
+  TProcessInformation32 = record
+    hProcess, hThread: THandle;
+    dwProcessId, dwThreadId: DWORD;
+  end;
+
 function PeekMessage(var lpMsg: TAppMsg; hWnd: HWND; wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL;
   external 'PeekMessageW@user32.dll stdcall';
 
@@ -198,8 +217,28 @@ function CloseHandle(hObject: THandle): BOOL;
 function OpenProcess(dwDesiredAccess: DWORD; bInheritHandle: BOOL; dwProcessId: DWORD): THandle;
   external 'OpenProcess@kernel32.dll stdcall';
 
-function TerminateProcess(hProcess: THandle; uExitCode: UINT): BOOL;
-  external 'TerminateProcess@kernel32.dll stdcall';
+function CreateProcessW(const ApplicationName, CommandLine: string;
+  ProcessAttributes, ThreadAttributes: LongInt; InheritHandles: BOOL;
+  CreationFlags: DWORD; Environment: LongInt; const CurrentDirectory: string;
+  var StartupInfo: TStartupInfo32; var ProcessInformation: TProcessInformation32): BOOL;
+  external 'CreateProcessW@kernel32.dll stdcall';
+
+function WaitForSingleObject(hHandle: THandle; dwMilliseconds: DWORD): DWORD;
+  external 'WaitForSingleObject@kernel32.dll stdcall';
+
+function GetExitCodeProcess(hProcess: THandle; var ExitCode: DWORD): BOOL;
+  external 'GetExitCodeProcess@kernel32.dll stdcall';
+
+function CreateMutexW(MutexAttributes: LongInt; InitialOwner: BOOL; const Name: string): THandle;
+  external 'CreateMutexW@kernel32.dll stdcall';
+
+function GetLastError: DWORD;
+  external 'GetLastError@kernel32.dll stdcall';
+
+function CreateFileW(const FileName: string; DesiredAccess, ShareMode: DWORD;
+  SecurityAttributes: LongInt; CreationDisposition, FlagsAndAttributes: DWORD;
+  TemplateFile: THandle): THandle;
+  external 'CreateFileW@kernel32.dll stdcall';
 
 function QueryFullProcessImageName(hProcess: THandle; dwFlags: DWORD; lpExeName: string; var lpdwSize: DWORD): BOOL;
   external 'QueryFullProcessImageNameW@kernel32.dll stdcall';
@@ -216,20 +255,6 @@ begin
 end;
 
 
-procedure ProcessSleep(Milliseconds: Integer);
-var
-  Elapsed: Integer;
-begin
-  Elapsed := 0;
-  while Elapsed < Milliseconds do
-  begin
-    AppProcessMessage;
-    Sleep(50);
-    Elapsed := Elapsed + 50;
-  end;
-  AppProcessMessage;
-end;
-
 const
   AppSubKeyStandard   = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{' + '{#MyAppId}' + '}_is1';
   AppSubKeyLegacy     = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{' + '{#MyAppId}' + '}}_is1';
@@ -240,14 +265,14 @@ var
   PreviousRootKey: Integer;
   HasPreviousInstall: Boolean;
   BroughtToFrontOnce: Boolean;
-
-function GetSelfExeName: string;
-begin
-  if IsUninstaller then
-    Result := Uppercase(ExtractFileName(ExpandConstant('{uninstallexe}')))
-  else
-    Result := Uppercase(ExtractFileName(ExpandConstant('{srcexe}')));
-end;
+  RecoveryDir: string;
+  RecoveryCommitFailed: Boolean;
+  MigrationNeeded: Boolean;
+  MigrationRootKey: Integer;
+  MigrationInstallPath, MigrationUninstallExe: string;
+  UninstallMutex: THandle;
+  ProcessScanFailed: Boolean;
+  BlockingProcess: string;
 
 function GetProcessExePath(PID: DWORD): string;
 var
@@ -317,7 +342,6 @@ end;
 
 function IsProcessInDir(ProcessID: DWORD; const TargetDir: string; const ExeName: string): Boolean;
 var
-  SelfExe: string;
   ProcPath: string;
   TempDir: string;
   NormDir: string;
@@ -328,14 +352,28 @@ begin
   if (ProcessID = 0) or (ProcessID = GetCurrentProcessId) then Exit;
 
   CleanExe := Uppercase(ExeName);
+  ProcPath := Uppercase(GetProcessExePath(ProcessID));
+  if ProcPath <> '' then
+  begin
+    if IsUninstaller then
+    begin
+      if ProcPath = Uppercase(ExpandConstant('{uninstallexe}')) then Exit;
+    end
+    else if ProcPath = Uppercase(ExpandConstant('{srcexe}')) then Exit;
+  end;
 
-  // 2. Autoprotección: nunca evaluar ejecutables propios ni temporales del instalador
-  SelfExe := GetSelfExeName;
-  if (SelfExe <> '') and ((CleanExe = SelfExe) or (CleanExe = ChangeFileExt(SelfExe, '.TMP'))) then Exit;
+  // Reconocer los ejecutables conocidos en cualquier ubicación.
+  if (CleanExe = Uppercase('{#MyAppExeName}')) or (CleanExe = Uppercase('{#EditorExeName}')) or
+     (CleanExe = Uppercase('{#CaptureExeName}')) or (CleanExe = Uppercase('{#ConfigExeName}')) then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  // No evaluar procesos auxiliares del instalador o desinstalador.
   if (Pos('SETUP', CleanExe) > 0) or (Pos('UNINS', CleanExe) > 0) or (Pos('IS-', CleanExe) > 0) then Exit;
 
   // 3. Autoprotección adicional por ruta en carpetas temporales
-  ProcPath := Uppercase(GetProcessExePath(ProcessID));
   if ProcPath <> '' then
   begin
     TempDir := Uppercase(ExpandConstant('{tmp}'));
@@ -362,9 +400,6 @@ begin
     end;
   end;
 
-  // 5. Identificación transversal: cualquier proceso de la suite que contenga el nombre de la aplicación
-  if Pos(Uppercase('{#MyAppName}'), CleanExe) > 0 then
-    Result := True;
 end;
 
 function HasProcessesInDir(const TargetDir: string): Boolean;
@@ -374,8 +409,17 @@ var
   ExeName: string;
 begin
   Result := False;
+  ProcessScanFailed := False;
+  BlockingProcess := '';
 
   hSnap := CreateToolhelp32Snapshot($00000002 {TH32CS_SNAPPROCESS}, 0);
+  if hSnap = -1 then
+  begin
+    Log('No se pudo comprobar la lista de procesos.');
+    ProcessScanFailed := True;
+    Result := True;
+    Exit;
+  end;
   if hSnap <> -1 then
   begin
     try
@@ -386,10 +430,17 @@ begin
           ExeName := ProcessEntryExeName(pe);
           if IsProcessInDir(pe.th32ProcessID, TargetDir, ExeName) then
           begin
+            BlockingProcess := ExeName + ' (PID: ' + IntToStr(pe.th32ProcessID) + ')';
             Result := True;
             Exit;
           end;
         until not Process32Next(hSnap, pe);
+      end
+      else
+      begin
+        Log('No se pudo leer la lista de procesos.');
+        ProcessScanFailed := True;
+        Result := True;
       end;
     finally
       CloseHandle(hSnap);
@@ -426,55 +477,10 @@ begin
   end;
 end;
 
-procedure KillProcessesInDir(const TargetDir: string);
-var
-  hSnap: THandle;
-  pe: TProcessEntry32;
-  ExeName: string;
-  hProc: THandle;
-  ResultCode: Integer;
-begin
-  hSnap := CreateToolhelp32Snapshot($00000002 {TH32CS_SNAPPROCESS}, 0);
-  if hSnap <> -1 then
-  begin
-    try
-      pe.dwSize := SizeOf(pe);
-      if Process32First(hSnap, pe) then
-      begin
-        repeat
-          ExeName := ProcessEntryExeName(pe);
-          if IsProcessInDir(pe.th32ProcessID, TargetDir, ExeName) then
-          begin
-            hProc := OpenProcess($0001 {PROCESS_TERMINATE}, False, pe.th32ProcessID);
-            if hProc <> 0 then
-            begin
-              try
-                TerminateProcess(hProc, 0);
-              finally
-                CloseHandle(hProc);
-              end;
-            end;
-          end;
-        until not Process32Next(hSnap, pe);
-      end;
-    finally
-      CloseHandle(hSnap);
-    end;
-  end;
-
-  // Fallback con taskkill del sistema para procesos colgados o con bloqueos de kernel/antivirus
-  try
-    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /T /IM {#MyAppName}*.exe', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-  except
-  end;
-end;
-
 // Diálogo nativo estándar para advertir procesos en ejecución en instalador y desinstalador
 
 function EnsureQapptiaClosed(IsUninstalling: Boolean): Boolean;
 var
-  ActiveDir: string;
-  WaitCount: Integer;
   PromptMsg: string;
 begin
   Result := True;
@@ -482,18 +488,11 @@ begin
   // Si la aplicación no está en ejecución, continuar inmediatamente
   if not IsAppRunning then Exit;
 
-  // En modo desatendido (silencioso), liberar procesos para permitir la actualización
+  // En modo desatendido, no se interrumpe el trabajo de otra instancia.
   if IsSilentMode then
   begin
-    ActiveDir := GetActiveInstallDir;
-    KillProcessesInDir(ActiveDir);
-    WaitCount := 0;
-    while IsAppRunning and (WaitCount < 10) do
-    begin
-      ProcessSleep(100);
-      WaitCount := WaitCount + 1;
-    end;
-    Result := not IsAppRunning;
+    Log('No se puede continuar sin cerrar Qapptia: ' + BlockingProcess);
+    Result := False;
     Exit;
   end;
 
@@ -505,6 +504,16 @@ begin
 
   while IsAppRunning do
   begin
+    if ProcessScanFailed then
+      PromptMsg := 'No se pudo comprobar si Qapptia está en ejecución. Reintente o cancele.'
+    else if BlockingProcess <> '' then
+    begin
+      if IsUninstalling then
+        PromptMsg := ExpandConstant('{cm:AppRunningPromptUninstall}')
+      else
+        PromptMsg := ExpandConstant('{cm:AppRunningPromptInstall}');
+      PromptMsg := PromptMsg + #13#10#13#10 + BlockingProcess;
+    end;
     if SuppressibleMsgBox(PromptMsg, mbConfirmation, MB_RETRYCANCEL, IDRETRY) <> IDRETRY then
     begin
       Result := False;
@@ -542,13 +551,20 @@ begin
     Result := CheckUninstallKey(RootKey, AppSubKeyLegacy, UninsExe, InstPath);
 end;
 
-function FindInstallInHKLM(var UninsExe: string; var InstPath: string): Boolean;
+function FindInstallInHKLM(var RootKey: Integer; var UninsExe: string; var InstPath: string): Boolean;
 begin
+  RootKey := HKLM;
   Result := FindInstallInHive(HKLM, UninsExe, InstPath);
   if not Result and IsWin64 then
+  begin
+    RootKey := HKLM64;
     Result := FindInstallInHive(HKLM64, UninsExe, InstPath);
+  end;
   if not Result then
+  begin
+    RootKey := HKLM32;
     Result := FindInstallInHive(HKLM32, UninsExe, InstPath);
+  end;
 end;
 
 function FindPreviousInstall(var RootKey: Integer; var UninsExe: string; var InstPath: string): Boolean;
@@ -558,9 +574,8 @@ begin
     RootKey := HKCU;
     Result := True;
   end
-  else if FindInstallInHKLM(UninsExe, InstPath) then
+  else if FindInstallInHKLM(RootKey, UninsExe, InstPath) then
   begin
-    RootKey := HKLM;
     Result := True;
   end
   else
@@ -569,41 +584,146 @@ begin
   end;
 end;
 
-procedure PurgeInstallationHive(RootKey: Integer; const InstPath, UninsExe: string);
+function RunUninstallerBounded(const UninsExe: string; var ExitCode: DWORD): Boolean;
 var
-  ResultCode: Integer;
-  RetryCount: Integer;
+  StartupInfo: TStartupInfo32;
+  ProcessInfo: TProcessInformation32;
+  CommandLine: string;
+  WaitResult: DWORD;
+  WaitCount: Integer;
 begin
-  // 1. Intentar desinstalación limpia y desatendida
-  if (UninsExe <> '') and FileExists(UninsExe) then
+  Result := False;
+  ExitCode := DWORD(-1);
+  StartupInfo.cb := SizeOf(StartupInfo);
+  StartupInfo.lpReserved := 0;
+  StartupInfo.lpDesktop := 0;
+  StartupInfo.lpTitle := 0;
+  StartupInfo.dwX := 0;
+  StartupInfo.dwY := 0;
+  StartupInfo.dwXSize := 0;
+  StartupInfo.dwYSize := 0;
+  StartupInfo.dwXCountChars := 0;
+  StartupInfo.dwYCountChars := 0;
+  StartupInfo.dwFillAttribute := 0;
+  StartupInfo.dwFlags := 0;
+  StartupInfo.wShowWindow := 0;
+  StartupInfo.cbReserved2 := 0;
+  StartupInfo.lpReserved2 := 0;
+  StartupInfo.hStdInput := 0;
+  StartupInfo.hStdOutput := 0;
+  StartupInfo.hStdError := 0;
+  CommandLine := '"' + UninsExe + '" /SILENT /NORESTART /SUPPRESSMSGBOXES /QAPPTIAMIGRATION=1';
+  if not CreateProcessW(UninsExe, CommandLine, 0, 0, False, 0, 0,
+    ExtractFileDir(UninsExe), StartupInfo, ProcessInfo) then
   begin
-    Exec(UninsExe, '/SILENT /NORESTART /SUPPRESSMSGBOXES', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Log('No se pudo iniciar el desinstalador anterior.');
+    Result := True;
+    Exit;
+  end;
+  try
+    WaitCount := 0;
+    repeat
+      WaitResult := WaitForSingleObject(ProcessInfo.hProcess, 100);
+      AppProcessMessage;
+      WaitCount := WaitCount + 1;
+    until (WaitResult <> $00000102) or (WaitCount >= 600);
+    if WaitResult <> 0 then
+    begin
+      Log('El desinstalador anterior no terminó dentro del plazo.');
+      Exit;
+    end;
+    Result := GetExitCodeProcess(ProcessInfo.hProcess, ExitCode);
+  finally
+    CloseHandle(ProcessInfo.hThread);
+    CloseHandle(ProcessInfo.hProcess);
+  end;
+end;
+
+function CanDeleteFile(const FileName: string): Boolean; forward;
+function CanDeleteDirectoryFiles(const DirPath: string; var BlockedPath: string): Boolean; forward;
+
+function PurgeInstallationHive(RootKey: Integer; const InstPath, UninsExe: string): Boolean;
+var
+  ExitCode: DWORD;
+  NeedsRescue: Boolean;
+  AppDir, AppExe, NormalPath, UninsName, BlockedPath: string;
+begin
+  Result := False;
+  if (RootKey <> HKCU) and not IsAdmin then
+  begin
+    Log('La instalación anterior requiere permisos de administrador.');
+    Exit;
   end;
 
-  // 2. Contingencia de Purga de Rescate: si el desinstalador anterior falló o dejó residuos
-  if (InstPath <> '') and DirExists(InstPath) then
+  NormalPath := '';
+  if InstPath <> '' then
+    NormalPath := RemoveBackslashUnlessRoot(ExpandFileName(InstPath));
+  if (NormalPath <> '') and
+     ((NormalPath = ExtractFileDrive(NormalPath) + '\') or
+      (CompareText(NormalPath, ExpandConstant('{win}')) = 0)) then Exit;
+
+  NeedsRescue := True;
+  UninsName := Uppercase(ExtractFileName(UninsExe));
+  if (NormalPath <> '') and (Pos('UNINS', UninsName) = 1) and
+     (CompareText(ExtractFileExt(UninsExe), '.exe') = 0) and
+     (CompareText(RemoveBackslashUnlessRoot(ExpandFileName(ExtractFileDir(UninsExe))), NormalPath) = 0) and
+     FileExists(UninsExe) then
   begin
-    RetryCount := 0;
-    while DirExists(InstPath) and (RetryCount < 10) do
+    if not RunUninstallerBounded(UninsExe, ExitCode) then Exit;
+    Log('Desinstalador anterior finalizó con código: ' + IntToStr(ExitCode));
+    NeedsRescue := ExitCode <> 0;
+  end;
+
+  if NeedsRescue then
+  begin
+    if WizardSilent then
     begin
-      DelTree(InstPath, True, True, True);
-      RemoveDir(InstPath);
-      if not DirExists(InstPath) then Break;
-      ProcessSleep(100);
-      RetryCount := RetryCount + 1;
+      Log('La instalación anterior requiere recuperación interactiva.');
+      Exit;
+    end;
+    if MsgBox('No se pudo ejecutar el desinstalador anterior. ¿Desea eliminar los binarios de Qapptia para continuar?', mbConfirmation, MB_YESNO) <> IDYES then Exit;
+  end;
+
+  if NormalPath <> '' then
+  begin
+    AppDir := NormalPath + '\app';
+    AppExe := NormalPath + '\{#MyAppExeName}';
+    if NeedsRescue then
+    begin
+      BlockedPath := AppExe;
+      if not CanDeleteFile(AppExe) or not CanDeleteDirectoryFiles(AppDir, BlockedPath) then
+      begin
+        Log('No se puede completar la recuperación: ' + BlockedPath);
+        Exit;
+      end;
+    end;
+    if DirExists(AppDir) and NeedsRescue then
+    begin
+      if not FileExists(AppDir + '\Qapptia.dll') and
+         not FileExists(AppDir + '\{#EditorExeName}') and
+         not FileExists(AppDir + '\{#CaptureExeName}') then Exit;
+      DelTree(AppDir, True, True, True);
+    end;
+    if NeedsRescue and FileExists(AppExe) then DeleteFile(AppExe);
+    if DirExists(AppDir) or FileExists(AppExe) then
+    begin
+      Log('La instalación anterior conserva archivos; no se eliminará su registro: ' + NormalPath);
+      Exit;
     end;
   end;
 
-  // 3. Limpieza de claves de registro huérfanas en el hive previo
   RegDeleteKeyIncludingSubkeys(RootKey, AppSubKeyStandard);
   RegDeleteKeyIncludingSubkeys(RootKey, AppSubKeyLegacy);
+  if RegKeyExists(RootKey, AppSubKeyStandard) or RegKeyExists(RootKey, AppSubKeyLegacy) then Exit;
   DeleteDesktopIcons;
+  Result := True;
 end;
 
 function InitializeSetup: Boolean;
 var
   UserUninsExe, UserInstPath: string;
   SystemUninsExe, SystemInstPath: string;
+  SystemRootKey: Integer;
 begin
   Result := False;
 
@@ -622,9 +742,18 @@ begin
     // Instalando para todos los usuarios: comprobar si existe versión previa en HKCU
     if FindInstallInHive(HKCU, UserUninsExe, UserInstPath) then
     begin
+      if WizardSilent then
+      begin
+        Log('El cambio de ámbito requiere confirmación interactiva.');
+        Result := False;
+        Exit;
+      end;
       if SuppressibleMsgBox(ExpandConstant('{cm:ScopeTransitionUserToAll}'), mbConfirmation, MB_YESNO, IDYES) = IDYES then
       begin
-        PurgeInstallationHive(HKCU, UserInstPath, UserUninsExe);
+        MigrationNeeded := True;
+        MigrationRootKey := HKCU;
+        MigrationInstallPath := UserInstPath;
+        MigrationUninstallExe := UserUninsExe;
       end
       else
       begin
@@ -636,11 +765,27 @@ begin
   else
   begin
     // Instalando solo para el usuario: comprobar si existe versión en HKLM
-    if FindInstallInHKLM(SystemUninsExe, SystemInstPath) then
+    if FindInstallInHKLM(SystemRootKey, SystemUninsExe, SystemInstPath) then
     begin
+      if WizardSilent then
+      begin
+        Log('El cambio de ámbito requiere confirmación interactiva.');
+        Result := False;
+        Exit;
+      end;
+      if not IsAdmin then
+      begin
+        Log('El cambio de ámbito requiere permisos de administrador.');
+        Result := False;
+        MsgBox('Para cambiar la instalación existente se requieren permisos de administrador.', mbError, MB_OK);
+        Exit;
+      end;
       if SuppressibleMsgBox(ExpandConstant('{cm:ScopeTransitionAllToUser}'), mbConfirmation, MB_YESNO, IDYES) = IDYES then
       begin
-        PurgeInstallationHive(HKLM, SystemInstPath, SystemUninsExe);
+        MigrationNeeded := True;
+        MigrationRootKey := SystemRootKey;
+        MigrationInstallPath := SystemInstPath;
+        MigrationUninstallExe := SystemUninsExe;
       end
       else
       begin
@@ -733,204 +878,225 @@ begin
   Result := IsAdmin and (Version.Major = 6) and (Version.Minor >= 1);
 end;
 
-function GetUniqueQuarantineDir(const BaseDir, Prefix: string): string;
+function RestorePreviousInstallation(const BackupDir, TargetDir: string): Boolean;
 var
-  Timestamp: string;
-  Candidate: string;
-  Counter: Integer;
+  OldApp, OldExe, AppDir, AppExe: string;
+  Owner: AnsiString;
 begin
-  Timestamp := GetDateTimeString('yyyymmdd_hhnnss', #0, #0);
-  Candidate := BaseDir + '\' + Prefix + '_' + Timestamp;
-  if not DirExists(Candidate) and not FileExists(Candidate) then
+  Result := False;
+  if not DirExists(BackupDir) then
   begin
-    Result := Candidate;
+    Result := True;
     Exit;
   end;
-  Counter := 1;
-  while True do
+
+  if not LoadStringFromFile(BackupDir + '\owner', Owner) or (Owner <> '{#MyAppId}') then
   begin
-    Candidate := BaseDir + '\' + Prefix + '_' + Timestamp + '_' + IntToStr(Counter);
-    if not DirExists(Candidate) and not FileExists(Candidate) then
+    Log('El directorio de recuperación no pertenece a esta instalación: ' + BackupDir);
+    Exit;
+  end;
+
+  if FileExists(BackupDir + '\committed') then
+  begin
+    DelTree(BackupDir, True, True, True);
+    Result := not DirExists(BackupDir);
+    Exit;
+  end;
+
+  OldApp := BackupDir + '\app';
+  OldExe := BackupDir + '\{#MyAppExeName}';
+  AppDir := TargetDir + '\app';
+  AppExe := TargetDir + '\{#MyAppExeName}';
+  if DirExists(OldApp) then
+  begin
+    if DirExists(AppDir) then DelTree(AppDir, True, True, True);
+    if DirExists(AppDir) or not RenameFile(OldApp, AppDir) then Exit;
+  end;
+  if FileExists(OldExe) then
+  begin
+    if FileExists(AppExe) and not DeleteFile(AppExe) then Exit;
+    if not RenameFile(OldExe, AppExe) then Exit;
+  end;
+  if not DeleteFile(BackupDir + '\owner') then Exit;
+  RemoveDir(BackupDir);
+  Result := not DirExists(BackupDir);
+end;
+
+function PreservePreviousInstallation(const TargetDir: string): Boolean;
+var
+  AppDir, AppExe: string;
+begin
+  Result := False;
+  RecoveryDir := TargetDir + '\.qapptia-recovery';
+  if not RestorePreviousInstallation(RecoveryDir, TargetDir) then Exit;
+  AppDir := TargetDir + '\app';
+  AppExe := TargetDir + '\{#MyAppExeName}';
+  if not DirExists(AppDir) and not FileExists(AppExe) then
+  begin
+    RecoveryDir := '';
+    Result := True;
+    Exit;
+  end;
+  if DirExists(AppDir) and not FileExists(AppDir + '\Qapptia.dll') and
+     not FileExists(AppDir + '\{#EditorExeName}') and
+     not FileExists(AppDir + '\{#CaptureExeName}') and
+     not FileExists(AppDir + '\Qapptia.App.Editor.exe') and
+     not FileExists(AppDir + '\Qapptia.App.Capture.exe') then
+  begin
+    Log('No se reemplazará una carpeta app que no se identifica como Qapptia: ' + AppDir);
+    Exit;
+  end;
+  if not ForceDirectories(RecoveryDir) then Exit;
+  if not SaveStringToFile(RecoveryDir + '\owner', '{#MyAppId}', False) then
+  begin
+    RemoveDir(RecoveryDir);
+    Exit;
+  end;
+  if DirExists(AppDir) and not RenameFile(AppDir, RecoveryDir + '\app') then Exit;
+  if FileExists(AppExe) and not RenameFile(AppExe, RecoveryDir + '\{#MyAppExeName}') then
+  begin
+    RestorePreviousInstallation(RecoveryDir, TargetDir);
+    Exit;
+  end;
+  Result := True;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  MigrationSucceeded: Boolean;
+begin
+  if CurStep <> ssPostInstall then Exit;
+  if not FileExists(ExpandConstant('{app}\{#MyAppExeName}')) or
+     not FileExists(ExpandConstant('{app}\app\Qapptia.dll')) or
+     not FileExists(ExpandConstant('{app}\app\coreclr.dll')) or
+     not FileExists(ExpandConstant('{app}\app\{#EditorExeName}')) or
+     not FileExists(ExpandConstant('{app}\app\{#CaptureExeName}')) or
+     not FileExists(ExpandConstant('{app}\app\{#ConfigExeName}')) then
+  begin
+    RecoveryCommitFailed := True;
+    Log('No se encontraron todos los binarios necesarios después de la instalación.');
+    if not WizardSilent then
+      MsgBox('La instalación no contiene todos los archivos necesarios. Se intentará restaurar la versión anterior.', mbError, MB_OK);
+    Exit;
+  end;
+  if (RecoveryDir <> '') and DirExists(RecoveryDir) then
+  begin
+    if SaveStringToFile(RecoveryDir + '\committed', 'ok', False) then
+      DelTree(RecoveryDir, True, True, True)
+    else
     begin
-      Result := Candidate;
-      Exit;
+      RecoveryCommitFailed := True;
+      Log('No se pudo confirmar la instalación; se intentará restaurar: ' + RecoveryDir);
+      if not WizardSilent then
+        MsgBox('No se pudo confirmar la actualización. Se intentará restaurar la versión anterior.', mbError, MB_OK);
     end;
-    Counter := Counter + 1;
+  end;
+  if MigrationNeeded and not RecoveryCommitFailed then
+  begin
+    if (MigrationInstallPath <> '') and
+       (CompareText(RemoveBackslashUnlessRoot(ExpandFileName(MigrationInstallPath)),
+                    RemoveBackslashUnlessRoot(ExpandFileName(ExpandConstant('{app}')))) = 0) then
+    begin
+      Log('No se eliminará la instalación anterior porque comparte el directorio de la instalación nueva.');
+      MigrationSucceeded := False;
+    end
+    else
+      MigrationSucceeded := PurgeInstallationHive(MigrationRootKey, MigrationInstallPath, MigrationUninstallExe);
+    if WizardIsTaskSelected('desktopicon') then
+    begin
+      try
+        CreateShellLink(ExpandConstant('{autodesktop}\{#MyAppName}.lnk'), '',
+          ExpandConstant('{app}\{#MyAppExeName}'), '', ExpandConstant('{app}'), '', 0, SW_SHOWNORMAL);
+      except
+        Log('No se pudo recrear el acceso directo: ' + GetExceptionMessage);
+      end;
+    end;
+    if not MigrationSucceeded then
+    begin
+      RecoveryCommitFailed := True;
+      Log('La instalación nueva está disponible, pero no se pudo retirar la instalación anterior: ' + MigrationInstallPath);
+      if not WizardSilent then
+        MsgBox('Qapptia se instaló, pero no se pudo retirar la instalación anterior. Revise los permisos y archivos en uso antes de reintentar.', mbError, MB_OK);
+    end;
   end;
 end;
 
-function GetUniqueQuarantineFile(const BaseDir, FileName: string): string;
-var
-  Timestamp: string;
-  Candidate: string;
-  Counter: Integer;
+function GetCustomSetupExitCode: Integer;
 begin
-  Timestamp := GetDateTimeString('yyyymmdd_hhnnss', #0, #0);
-  Candidate := BaseDir + '\' + FileName + '.old_' + Timestamp;
-  if not FileExists(Candidate) and not DirExists(Candidate) then
-  begin
-    Result := Candidate;
-    Exit;
-  end;
-  Counter := 1;
-  while True do
-  begin
-    Candidate := BaseDir + '\' + FileName + '.old_' + Timestamp + '_' + IntToStr(Counter);
-    if not FileExists(Candidate) and not DirExists(Candidate) then
-    begin
-      Result := Candidate;
-      Exit;
-    end;
-    Counter := Counter + 1;
-  end;
+  if RecoveryCommitFailed then Result := 1 else Result := 0;
 end;
 
-function QuarantineFilesInDir(const DirPath: string): Boolean;
+function CanLaunchInstalledApplication: Boolean;
+begin
+  Result := not RecoveryCommitFailed;
+end;
+
+procedure DeinitializeSetup;
+begin
+  if (RecoveryDir <> '') and DirExists(RecoveryDir) then
+    if not RestorePreviousInstallation(RecoveryDir, ExpandConstant('{app}')) then
+    begin
+      Log('No se pudo restaurar la instalación anterior: ' + RecoveryDir);
+      if not WizardSilent then
+        MsgBox('No se pudo restaurar la instalación anterior. Los archivos de recuperación se conservan en: ' + RecoveryDir, mbError, MB_OK);
+    end;
+end;
+
+function CanDeleteFile(const FileName: string): Boolean;
 var
-  FindRec: TFindRec;
-  FilePath: string;
-  OldFilePath: string;
+  FileHandle: THandle;
+begin
+  Result := True;
+  if not FileExists(FileName) then Exit;
+  FileHandle := CreateFileW(FileName, $00010000 {DELETE}, 7 {compartir lectura, escritura y eliminación},
+    0, 3 {OPEN_EXISTING}, $80 {FILE_ATTRIBUTE_NORMAL}, 0);
+  Result := FileHandle <> -1;
+  if Result then CloseHandle(FileHandle)
+  else Log('No se puede eliminar el archivo en uso o sin permisos: ' + FileName);
+end;
+
+function CanDeleteDirectoryFiles(const DirPath: string; var BlockedPath: string): Boolean;
+var
+  Entry: TFindRec;
+  Path: string;
 begin
   Result := True;
   if not DirExists(DirPath) then Exit;
-
-  if FindFirst(DirPath + '\*', FindRec) then
+  if not FindFirst(DirPath + '\*', Entry) then
   begin
-    try
-      repeat
-        if (FindRec.Name <> '.') and (FindRec.Name <> '..') then
-        begin
-          FilePath := DirPath + '\' + FindRec.Name;
-          if (FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
-          begin
-            if not QuarantineFilesInDir(FilePath) then
-              Result := False;
-            RemoveDir(FilePath);
-          end
-          else
-          begin
-            // Si el archivo ya es un residuo de cuarentena de una ejecución previa
-            if (Pos('.old_', FindRec.Name) > 0) or (Pos('_old_', FindRec.Name) > 0) then
-            begin
-              // Intentar borrarlo; si sigue bloqueado, se ignora pues no colisiona con el archivo canónico
-              DeleteFile(FilePath);
-            end
-            else
-            begin
-              // Es un archivo canónico: intentar borrarlo directamente
-              if not DeleteFile(FilePath) then
-              begin
-                // Si está bloqueado, renombrarlo a cuarentena para liberar el nombre canónico
-                OldFilePath := GetUniqueQuarantineFile(DirPath, FindRec.Name);
-                if not RenameFile(FilePath, OldFilePath) then
-                begin
-                  Result := False;
-                end
-                else
-                begin
-                  // Intento de borrado no bloqueante del archivo recién puesto en cuarentena
-                  DeleteFile(OldFilePath);
-                end;
-              end;
-            end;
-          end;
-        end;
-      until not FindNext(FindRec);
-    finally
-      FindClose(FindRec);
-    end;
+    BlockedPath := DirPath;
+    Result := False;
+    Exit;
   end;
-end;
-
-function PrepareApplicationDirectory(const TargetDir: string): Boolean;
-var
-  AppBinDir: string;
-  QuarantineDir: string;
-  ExeFile: string;
-  OldExeFile: string;
-  RetryCount: Integer;
-  CmdResult: Integer;
-begin
-  Result := True;
-  if (TargetDir = '') or (not DirExists(TargetDir)) then Exit;
-
-  AppBinDir := TargetDir + '\app';
-
-  // 1. Manejo determinista de la subcarpeta de binarios 'app'
-  if DirExists(AppBinDir) then
-  begin
-    // Nivel 1: Eliminación limpia con reintentos para dar tiempo al kernel a liberar descriptores
-    RetryCount := 0;
-    while DirExists(AppBinDir) and (RetryCount < 5) do
-    begin
-      DelTree(AppBinDir, True, True, True);
-      RemoveDir(AppBinDir);
-      if not DirExists(AppBinDir) then Break;
-      ProcessSleep(100);
-      RetryCount := RetryCount + 1;
-    end;
-
-    // Contingencia de carpeta bloqueada: renombrar a directorio de cuarentena único
-    if DirExists(AppBinDir) then
-    begin
-      QuarantineDir := GetUniqueQuarantineDir(TargetDir, 'app_old');
-      if RenameFile(AppBinDir, QuarantineDir) then
+  try
+    repeat
+      if (Entry.Name <> '.') and (Entry.Name <> '..') then
       begin
-        // Limpieza no bloqueante del directorio de cuarentena
-        DelTree(QuarantineDir, True, True, True);
-        RemoveDir(QuarantineDir);
-      end
-      else
-      begin
-        // Contingencia por comando nativo del sistema desde carpeta temporal
-        Exec(ExpandConstant('{cmd}'), '/c rd /s /q "' + AppBinDir + '"', ExpandConstant('{tmp}'), SW_HIDE, ewWaitUntilTerminated, CmdResult);
-        ProcessSleep(150);
-
-        if DirExists(AppBinDir) then
+        Path := DirPath + '\' + Entry.Name;
+        if (Entry.Attributes and $400 {FILE_ATTRIBUTE_REPARSE_POINT}) <> 0 then
         begin
-          // Cuarentena granular de archivos individuales bloqueados dentro de app
-          if not QuarantineFilesInDir(AppBinDir) then
+          BlockedPath := Path;
+          Result := False;
+          Exit;
+        end;
+        if (Entry.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
+        begin
+          if not CanDeleteDirectoryFiles(Path, BlockedPath) then
           begin
-            // Abortar si algún archivo esencial no pudo liberarse ni ponerse en cuarentena
             Result := False;
             Exit;
           end;
+        end
+        else if not CanDeleteFile(Path) then
+        begin
+          BlockedPath := Path;
+          Result := False;
+          Exit;
         end;
       end;
-    end;
-  end;
-
-  // 2. Manejo determinista del ejecutable lanzador en la raíz ({app}\Qapptia.exe)
-  ExeFile := TargetDir + '\{#MyAppExeName}';
-  if FileExists(ExeFile) then
-  begin
-    RetryCount := 0;
-    while FileExists(ExeFile) and (RetryCount < 5) do
-    begin
-      if DeleteFile(ExeFile) then Break;
-      ProcessSleep(100);
-      RetryCount := RetryCount + 1;
-    end;
-
-    if FileExists(ExeFile) then
-    begin
-      // Contingencia atómica: Renombrar ejecutable bloqueado a cuarentena con nombre único garantizado
-      OldExeFile := GetUniqueQuarantineFile(TargetDir, '{#MyAppExeName}');
-      if not RenameFile(ExeFile, OldExeFile) then
-      begin
-        Result := False;
-        Exit;
-      end;
-      // Intento de borrado no bloqueante del archivo en cuarentena
-      DeleteFile(OldExeFile);
-    end;
-  end;
-
-  // 3. Verificación final estricta de seguridad: el ejecutable lanzador canónico no debe existir
-  if FileExists(ExeFile) then
-  begin
-    Result := False;
-    Exit;
+    until not FindNext(Entry);
+  finally
+    FindClose(Entry);
   end;
 end;
 
@@ -947,7 +1113,7 @@ begin
   end;
 
   // 2. Preparar y aislar directorios para evitar colisiones de archivos
-  if not PrepareApplicationDirectory(ExpandConstant('{app}')) then
+  if not PreservePreviousInstallation(ExpandConstant('{app}')) then
   begin
     Result := ExpandConstant('{cm:PrepareInstallFailed}');
     Exit;
@@ -955,8 +1121,49 @@ begin
 end;
 
 function InitializeUninstall: Boolean;
+var
+  ErrorCode: DWORD;
+  BackupDir, BlockedPath: string;
 begin
-  Result := EnsureQapptiaClosed(True);
+  Result := False;
+  if (ExpandConstant('{param:QAPPTIAMIGRATION|}') <> '1') and
+     CheckForMutexes('QapptiaInstaller,Global\QapptiaInstaller') then
+  begin
+    if not UninstallSilent then MsgBox('Hay una instalación de Qapptia en curso. Espere a que termine.', mbError, MB_OK);
+    Exit;
+  end;
+  UninstallMutex := CreateMutexW(0, False, 'Global\QapptiaUninstaller');
+  ErrorCode := GetLastError;
+  if UninstallMutex = 0 then Exit;
+  if ErrorCode = 183 then
+  begin
+    CloseHandle(UninstallMutex);
+    UninstallMutex := 0;
+    if not UninstallSilent then MsgBox('Ya hay una desinstalación de Qapptia en curso.', mbError, MB_OK);
+    Exit;
+  end;
+  if not EnsureQapptiaClosed(True) then Exit;
+  BackupDir := ExpandConstant('{app}\.qapptia-recovery');
+  if not RestorePreviousInstallation(BackupDir, ExpandConstant('{app}')) then
+  begin
+    if not UninstallSilent then MsgBox('No se pudo recuperar la instalación anterior. Revise los archivos en: ' + BackupDir, mbError, MB_OK);
+    Exit;
+  end;
+  BlockedPath := ExpandConstant('{app}\{#MyAppExeName}');
+  if not CanDeleteFile(BlockedPath) or
+     not CanDeleteDirectoryFiles(ExpandConstant('{app}\app'), BlockedPath) then
+  begin
+    Log('No se puede comenzar la desinstalación: ' + BlockedPath);
+    if not UninstallSilent then
+      MsgBox('No se puede desinstalar porque un archivo está en uso o no tiene permisos: ' + BlockedPath, mbError, MB_OK);
+    Exit;
+  end;
+  Result := True;
+end;
+
+procedure DeinitializeUninstall;
+begin
+  if UninstallMutex <> 0 then CloseHandle(UninstallMutex);
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -972,5 +1179,16 @@ begin
     DelTree(ExpandConstant('{localappdata}\{#MyAppName}\logs'), True, True, True);
     RemoveDir(ExpandConstant('{app}\app'));
     RemoveDir(ExpandConstant('{app}'));
+    if FileExists(ExpandConstant('{app}\{#MyAppExeName}')) or
+       FileExists(ExpandConstant('{app}\app\Qapptia.dll')) or
+       FileExists(ExpandConstant('{app}\app\{#EditorExeName}')) or
+       FileExists(ExpandConstant('{app}\app\{#CaptureExeName}')) or
+       FileExists(ExpandConstant('{app}\app\{#ConfigExeName}')) then
+    begin
+      Log('La desinstalación no pudo eliminar todos los binarios de Qapptia: ' + ExpandConstant('{app}'));
+      if not UninstallSilent then
+        MsgBox('La desinstalación quedó incompleta. Cierre los procesos que usan los archivos y ejecute el instalador para reparar o reintentar: ' + ExpandConstant('{app}'), mbError, MB_OK);
+      Abort;
+    end;
   end;
 end;

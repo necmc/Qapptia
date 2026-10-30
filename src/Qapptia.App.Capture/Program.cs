@@ -18,6 +18,7 @@ using Qapptia.Core.Services;
 using Serilog;
 using Serilog.Events;
 using CaptureConstants = Qapptia.App.Capture.Common.Constants;
+using Qapptia.UI.Components;
 #if WINDOWS
 using Qapptia.Platform.Windows;
 #elif LINUX
@@ -69,6 +70,7 @@ internal static class Program
             };
             AppBuilder.Configure<HeadlessCaptureApp>()
                 .UsePlatformDetect()
+                .WithHardwareAcceleration(enabled: false)
                 .AfterSetup(b =>
                 {
                     if (b.Instance is HeadlessCaptureApp app)

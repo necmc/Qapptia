@@ -8,6 +8,7 @@ using Qapptia.Core.Ipc;
 using Qapptia.Core.Logging;
 using Qapptia.Core.Platform;
 using Qapptia.UI.Components.Theme;
+using Qapptia.UI.Components;
 using Serilog;
 using Serilog.Events;
 
@@ -101,6 +102,7 @@ sealed class Program
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
+            .WithHardwareAcceleration(enabled: false)
 #if DEBUG
             .WithDeveloperTools()
 #endif

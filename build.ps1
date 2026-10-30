@@ -255,31 +255,6 @@ function Publish-AppFiles {
         Remove-Item -Recurse -Force $distAppDir
     }
 
-    $publishLauncherArgs = @(
-        "publish", (Join-Path $rootDir "src/Qapptia.Launcher/Qapptia.Launcher.csproj"),
-        "-c", $Configuration,
-        "-r", $Runtime,
-        "--self-contained", $SelfContained.ToString().ToLower(),
-        "-p:PublishSingleFile=true",
-        "-p:IncludeNativeLibrariesForSelfExtract=true",
-        "-p:DebugType=none",
-        "-o", $distAppDir
-    )
-    if ($SelfContained) {
-        $publishLauncherArgs += "-p:PublishTrimmed=true"
-    }
-
-    & dotnet $publishLauncherArgs
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Error al publicar Qapptia.Launcher ($VariantName)."
-        exit $LASTEXITCODE
-    }
-
-    $rootAssets = Join-Path $distAppDir "Assets"
-    if (Test-Path $rootAssets) {
-        Remove-Item -Recurse -Force $rootAssets
-    }
-
     $subProjects = @(
         "src/Qapptia.App.Capture/Qapptia.App.Capture.csproj",
         "src/Qapptia.App.Editor/Qapptia.App.Editor.csproj",
@@ -297,6 +272,24 @@ function Publish-AppFiles {
             exit $LASTEXITCODE
         }
     }
+
+    # El apphost raíz carga el Launcher y las dependencias compartidas desde app.
+    $launcherName = if ($Runtime -like "win*") { "Qapptia.exe" } else { "Qapptia" }
+    $launcherHostPath = Join-Path $distAppDir $launcherName
+    & dotnet publish (Join-Path $rootDir "src/Qapptia.Launcher/Qapptia.Launcher.csproj") `
+        -c $Configuration -r $Runtime `
+        --self-contained $SelfContained `
+        -p:PublishSingleFile=false `
+        -p:PublishTrimmed=false `
+        -p:DebugType=none `
+        "-p:SuiteLauncherHostPath=$launcherHostPath" `
+        -o $distSubAppDir
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Error al publicar Qapptia.Launcher ($VariantName)."
+        exit $LASTEXITCODE
+    }
+
+    Remove-BuildArtifact -Path (Join-Path $distSubAppDir $launcherName)
 
     # Depuración de símbolos PDB y ensamblados ajenos al sistema operativo de destino
     Get-ChildItem -Path $distAppDir -Filter "*.pdb" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
@@ -394,7 +387,11 @@ function Build-InstallerPackage {
         Move-Item -LiteralPath $stagedExePath -Destination $setupFilePath -Force
     } finally {
         if (Test-Path -LiteralPath $stagingDir) {
-            Remove-Item -LiteralPath $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
+            try {
+                Remove-Item -LiteralPath $stagingDir -Recurse -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "No se pudo eliminar el directorio temporal ${stagingDir}: $($_.Exception.Message)"
+            }
         }
     }
 

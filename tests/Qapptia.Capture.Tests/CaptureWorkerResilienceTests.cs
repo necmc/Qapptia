@@ -62,19 +62,26 @@ public sealed class CaptureWorkerResilienceTests
     }
 
     [Fact]
-    public void PowerResumeTriggersRefreshIconOnTrayService()
+    public async Task PowerResumeTriggersRefreshIconOnTrayService()
     {
         _powerEventsMock.SetupGet(p => p.RequiresHotkeyReRegistrationAfterResume).Returns(true);
+        var subscription = new TaskCompletionSource<EventHandler<PowerMode>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _powerEventsMock.SetupAdd(p => p.PowerModeChanged += It.IsAny<EventHandler<PowerMode>>())
+            .Callback<EventHandler<PowerMode>>(handler => subscription.TrySetResult(handler));
         var worker = CreateWorker();
 
-        // Start worker execution to attach power events
-        using var cts = new CancellationTokenSource();
-        _ = worker.StartAsync(cts.Token);
-
-        _powerEventsMock.Raise(p => p.PowerModeChanged += null, _powerEventsMock.Object, PowerMode.Resume);
-
-        _trayIconMock.Verify(t => t.RefreshIcon(), Times.Once);
-
-        cts.Cancel();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        try
+        {
+            await worker.StartAsync(cts.Token);
+            var handler = await subscription.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+            handler(_powerEventsMock.Object, PowerMode.Resume);
+            _trayIconMock.Verify(t => t.RefreshIcon(), Times.Once);
+        }
+        finally
+        {
+            cts.Cancel();
+            await worker.StopAsync(TestContext.Current.CancellationToken);
+        }
     }
 }

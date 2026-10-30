@@ -12,7 +12,8 @@
     <PackageReference Include="Microsoft.Win32.SystemEvents" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Serilog" />
-    <PackageReference Include="NAudio" />
+    <PackageReference Include="NAudio.Core" />
+    <PackageReference Include="NAudio.Wasapi" />
     <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 

@@ -40,21 +40,13 @@ public static class QapptiaIpcClient
             using var timeoutCts = new CancellationTokenSource(timeoutMs);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
             await client.ConnectAsync(linkedCts.Token).ConfigureAwait(false);
+
+            await IpcWire.WriteFrameAsync(client, request, linkedCts.Token).ConfigureAwait(false);
+            return await IpcWire.ReadFrameAsync(client, linkedCts.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { return null; }
         catch (TimeoutException) { return null; }
         catch (IOException) { return null; }
         catch (Exception) { return null; }
-
-        try
-        {
-            await IpcWire.WriteFrameAsync(client, request, ct).ConfigureAwait(false);
-            var response = await IpcWire.ReadFrameAsync(client, ct).ConfigureAwait(false);
-            return response;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
     }
 }

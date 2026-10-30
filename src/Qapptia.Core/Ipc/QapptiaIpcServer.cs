@@ -55,8 +55,8 @@ public sealed class IpcMessageDispatcher
 }
 
 /// <summary>
-/// Servidor de Named Pipes para un canal. Acepta conexiones entrantes en loop, cada
-/// conexión en su propia <see cref="Task"/>. Implementa <see cref="IDisposable"/> para
+/// Servidor de Named Pipes para un canal. Atiende conexiones entrantes en un número
+/// acotado de bucles asíncronos. Implementa <see cref="IDisposable"/> para
 /// liberar recursos al detener la app.
 /// </summary>
 public sealed class QapptiaIpcServer : IDisposable
@@ -140,16 +140,14 @@ public sealed class QapptiaIpcServer : IDisposable
 
             if (_cts.IsCancellationRequested) return;
 
-            // Reemplazo: nuevo server para aceptar la siguiente conexión
+            // Reemplazar la conexión dentro del mismo bucle de aceptación.
             lock (_sync)
             {
                 _pendingServers.Remove(server);
                 if (_cts.IsCancellationRequested) return;
-                var fresh = CreateServer();
-                _pendingServers.Add(fresh);
-                _acceptTasks.Add(AcceptOneAsync(fresh));
+                server = CreateServer();
+                _pendingServers.Add(server);
             }
-            return;
         }
     }
 
