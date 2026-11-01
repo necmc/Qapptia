@@ -1,13 +1,8 @@
-using System;
+using Qapptia.UI.Components.Services;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Themes.Fluent;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Qapptia.Capture;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
@@ -146,7 +141,7 @@ internal sealed class AppLoggerMarker { }
 
 internal sealed class HeadlessCaptureApp : Application
 {
-    private static readonly System.Text.CompositeFormat s_trayDownloadFormat = System.Text.CompositeFormat.Parse(Qapptia.Core.Constants.TrayMenuDownloadUpdateFormat);
+    private static readonly System.Text.CompositeFormat s_trayDownloadFormat = System.Text.CompositeFormat.Parse(Qapptia.UI.Components.Common.Constants.TrayMenuDownloadUpdateFormat);
 
     public IHost AppHost { get; set; } = null!;
 
@@ -177,7 +172,7 @@ internal sealed class HeadlessCaptureApp : Application
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuConfig, () => LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgConfig)));
             menuDef.Items.Add(new TrayMenuSeparatorItem());
             long lastSponsorTicks = 0;
-            menuDef.Items.Add(new TrayMenuActionItem(Qapptia.Core.Constants.SponsorDefaultActionTitle, () =>
+            menuDef.Items.Add(new TrayMenuActionItem(Qapptia.UI.Components.Common.Constants.SponsorDefaultActionTitle, () =>
             {
                 var now = Environment.TickCount64;
                 if (now - lastSponsorTicks < Qapptia.Core.Constants.SponsorCooldownMs) return;
@@ -231,10 +226,10 @@ internal sealed class HeadlessCaptureApp : Application
             trayService?.Initialize(menuDef, iconPath);
 
             var isRestart = desktop.Args?.Any(a => string.Equals(a, Qapptia.Core.Constants.ArgRestart, StringComparison.OrdinalIgnoreCase)) ?? false;
-            var notificationTitle = Qapptia.Core.Constants.NotificationTitleCapture;
+            var notificationTitle = Qapptia.UI.Components.Common.Constants.NotificationTitleCapture;
             var notificationMessage = isRestart
-                ? Qapptia.Core.Constants.NotificationMessageCaptureRestarted
-                : Qapptia.Core.Constants.NotificationMessageCaptureStarted;
+                ? Qapptia.UI.Components.Common.Constants.NotificationMessageCaptureRestarted
+                : Qapptia.UI.Components.Common.Constants.NotificationMessageCaptureStarted;
 
             trayService?.ShowNotification(
                 notificationTitle,

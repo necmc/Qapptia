@@ -1,5 +1,5 @@
-using System.Threading.Tasks;
 using Avalonia.Controls;
+using Microsoft.Extensions.DependencyInjection;
 using Qapptia.App.Config.ViewModels;
 using Qapptia.Core.Configuration;
 
@@ -9,17 +9,17 @@ public partial class MainWindow : Window
 {
     public MainWindow() : this(false, null) { }
 
-    public MainWindow(bool startInAboutTab, JsonConfigService? configService = null)
+    public MainWindow(bool startInAboutTab, IConfigService? configService = null)
     {
         InitializeComponent();
 
-        var vm = new ConfigViewModel(
-            configService: configService,
-            startInAboutTab: startInAboutTab);
+        var services = ConfigComposition.CreateServices(configService, startInAboutTab);
+        var vm = services.GetRequiredService<ConfigViewModel>();
         vm.RequestClose = Close;
         vm.RequestBrowsePath = ShowFolderDialogAsync;
 
         DataContext = vm;
+        Closed += (_, _) => services.Dispose();
     }
 
     private async Task<string?> ShowFolderDialogAsync()

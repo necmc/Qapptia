@@ -1,9 +1,5 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Services;
-using Xunit;
 
 namespace Qapptia.Core.Tests;
 
@@ -51,7 +47,7 @@ public sealed class PeriodicUpdateCoordinatorTests
     [Fact]
     public async Task StartWhenFailedCheckShouldFireEventAndContinue()
     {
-        var expectedResult = UpdateCheckResult.Failed("2.0.0", "Servidor no disponible (503).");
+        var expectedResult = UpdateCheckResult.Failed("2.0.0", UpdateCheckError.ServerUnavailable);
 
         var service = new MockUpdateCheckService(_ => Task.FromResult(expectedResult));
         using var coordinator = new PeriodicUpdateCoordinator(service);
@@ -67,7 +63,7 @@ public sealed class PeriodicUpdateCoordinatorTests
 
         var result = await tcs.Task;
         Assert.Equal(UpdateCheckStatus.ConnectionFailed, result.Status);
-        Assert.Equal("Servidor no disponible (503).", result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.ServerUnavailable, result.Error);
 
         coordinator.Stop();
         Assert.False(coordinator.IsRunning);
@@ -133,7 +129,7 @@ public sealed class PeriodicUpdateCoordinatorTests
     [Fact]
     public async Task StartWhenNoInternetShouldFireEventAndContinue()
     {
-        var expectedResult = UpdateCheckResult.NoInternet("2.0.0", Constants.UpdateErrorNoInternet);
+        var expectedResult = UpdateCheckResult.NoInternet("2.0.0", UpdateCheckError.NoInternet);
 
         var service = new MockUpdateCheckService(_ => Task.FromResult(expectedResult));
         using var coordinator = new PeriodicUpdateCoordinator(service);
@@ -149,7 +145,7 @@ public sealed class PeriodicUpdateCoordinatorTests
 
         var result = await tcs.Task;
         Assert.Equal(UpdateCheckStatus.NoInternet, result.Status);
-        Assert.Equal(Constants.UpdateErrorNoInternet, result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.NoInternet, result.Error);
 
         coordinator.Stop();
         Assert.False(coordinator.IsRunning);
@@ -158,7 +154,7 @@ public sealed class PeriodicUpdateCoordinatorTests
     [Fact]
     public async Task StartWhenServerUnavailableShouldFireEventAndContinue()
     {
-        var expectedResult = UpdateCheckResult.ServerUnavailable("2.0.0", "Servidor no disponible (503).");
+        var expectedResult = UpdateCheckResult.ServerUnavailable("2.0.0", UpdateCheckError.ServerUnavailable, 503);
 
         var service = new MockUpdateCheckService(_ => Task.FromResult(expectedResult));
         using var coordinator = new PeriodicUpdateCoordinator(service);
@@ -174,7 +170,7 @@ public sealed class PeriodicUpdateCoordinatorTests
 
         var result = await tcs.Task;
         Assert.Equal(UpdateCheckStatus.ServerUnavailable, result.Status);
-        Assert.Equal("Servidor no disponible (503).", result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.ServerUnavailable, result.Error);
 
         coordinator.Stop();
         Assert.False(coordinator.IsRunning);

@@ -1,6 +1,6 @@
-using System;
+using Qapptia.UI.Components.Common;
 
-namespace Qapptia.Core.Services;
+namespace Qapptia.UI.Components.Services;
 
 /// <summary>
 /// Información visual de apoyo y contribución generada aleatoriamente (icono, texto y clave de estilo).

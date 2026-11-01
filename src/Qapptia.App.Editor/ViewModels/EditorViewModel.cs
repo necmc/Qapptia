@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -12,25 +7,26 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Qapptia.App.Editor.Common;
 using Qapptia.App.Editor.ViewModels.Shapes;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
 using Qapptia.Core.Ipc;
 using Qapptia.Core.Services;
-using IFontProvider = Qapptia.Editor.Core.IFontProvider;
-using Qapptia.App.Editor.Common;
 using Qapptia.Editor.Models;
 using Qapptia.Editor.Models.Navigation;
 using Qapptia.Editor.Services;
 using Qapptia.Editor.Tools;
 using Qapptia.UI.Components.Controls;
+using Qapptia.UI.Components.Services;
 using Serilog;
+using IFontProvider = Qapptia.Editor.Core.IFontProvider;
 
 namespace Qapptia.App.Editor.ViewModels;
 
 public partial class EditorViewModel : ObservableObject, IDisposable
 {
-    private static readonly System.Text.CompositeFormat s_updateToolTipFormat = System.Text.CompositeFormat.Parse(Qapptia.Core.Constants.ToolTipUpdateAvailableFormat);
+    private static readonly System.Text.CompositeFormat s_updateToolTipFormat = System.Text.CompositeFormat.Parse(Qapptia.UI.Components.Common.Constants.ToolTipUpdateAvailableFormat);
 
     private readonly IClipboardService? _clipboardService;
     private readonly ICaptureAppService _captureAppService;
@@ -74,9 +70,9 @@ public partial class EditorViewModel : ObservableObject, IDisposable
 
     public string InfoButtonToolTip => HasPendingUpdate && !string.IsNullOrWhiteSpace(PendingUpdateVersion)
         ? string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateToolTipFormat, PendingUpdateVersion)
-        : Qapptia.Core.Constants.ToolTipAbout;
+        : Qapptia.UI.Components.Common.Constants.ToolTipAbout;
 
-    public string InfoButtonIconKey => HasPendingUpdate ? Qapptia.Core.Constants.IconDownload : Qapptia.Core.Constants.IconInfo;
+    public string InfoButtonIconKey => HasPendingUpdate ? Qapptia.UI.Components.Common.Constants.IconDownload : Qapptia.UI.Components.Common.Constants.IconInfo;
 
     private long _lastUpdateDownloadTicks;
 

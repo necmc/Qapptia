@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Qapptia.Core\Qapptia.Core.csproj" />
+    <InternalsVisibleTo Include="Qapptia.Editor.Tests" />
   </ItemGroup>
 
 </Project>

@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Qapptia.Core.Abstractions;
 
@@ -29,6 +24,21 @@ public enum UpdateCheckStatus
 
     /// <summary>La respuesta remota no pudo deserializarse o contenía un SemVer inválido.</summary>
     InvalidPayload
+}
+
+/// <summary>Motivo técnico del fallo; la interfaz decide su texto.</summary>
+public enum UpdateCheckError
+{
+    None,
+    ServerUnavailable,
+    EmptyResponse,
+    MissingVersion,
+    InvalidVersionFormat,
+    CheckCancelled,
+    Timeout,
+    UnrecognizedResponse,
+    ConnectionFailed,
+    NoInternet
 }
 
 /// <summary>
@@ -139,7 +149,8 @@ public sealed class UpdateCheckResult
     public UpdateCheckStatus Status { get; init; }
     public ReleaseInfoDto? LatestRelease { get; init; }
     public string CurrentVersion { get; init; } = string.Empty;
-    public string? ErrorMessage { get; init; }
+    public UpdateCheckError Error { get; init; }
+    public int? HttpStatusCode { get; init; }
 
     public bool IsUpdateAvailable => Status == UpdateCheckStatus.UpdateAvailable;
 
@@ -149,17 +160,17 @@ public sealed class UpdateCheckResult
     public static UpdateCheckResult UpdateAvailable(string currentVersion, ReleaseInfoDto release) =>
         new() { Status = UpdateCheckStatus.UpdateAvailable, CurrentVersion = currentVersion, LatestRelease = release };
 
-    public static UpdateCheckResult Failed(string currentVersion, string errorMessage) =>
-        new() { Status = UpdateCheckStatus.ConnectionFailed, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
+    public static UpdateCheckResult Failed(string currentVersion, UpdateCheckError error) =>
+        new() { Status = UpdateCheckStatus.ConnectionFailed, CurrentVersion = currentVersion, Error = error };
 
-    public static UpdateCheckResult ServerUnavailable(string currentVersion, string errorMessage) =>
-        new() { Status = UpdateCheckStatus.ServerUnavailable, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
+    public static UpdateCheckResult ServerUnavailable(string currentVersion, UpdateCheckError error, int? httpStatusCode = null) =>
+        new() { Status = UpdateCheckStatus.ServerUnavailable, CurrentVersion = currentVersion, Error = error, HttpStatusCode = httpStatusCode };
 
-    public static UpdateCheckResult NoInternet(string currentVersion, string errorMessage) =>
-        new() { Status = UpdateCheckStatus.NoInternet, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
+    public static UpdateCheckResult NoInternet(string currentVersion, UpdateCheckError error) =>
+        new() { Status = UpdateCheckStatus.NoInternet, CurrentVersion = currentVersion, Error = error };
 
-    public static UpdateCheckResult Invalid(string currentVersion, string errorMessage) =>
-        new() { Status = UpdateCheckStatus.InvalidPayload, CurrentVersion = currentVersion, ErrorMessage = errorMessage };
+    public static UpdateCheckResult Invalid(string currentVersion, UpdateCheckError error) =>
+        new() { Status = UpdateCheckStatus.InvalidPayload, CurrentVersion = currentVersion, Error = error };
 }
 
 /// <summary>

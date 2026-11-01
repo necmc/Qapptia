@@ -1,14 +1,11 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
 using Qapptia.Core.Ipc;
 using Qapptia.Core.Logging;
 using Qapptia.Core.Platform;
-using Qapptia.UI.Components.Theme;
 using Qapptia.UI.Components;
+using Qapptia.UI.Components.Theme;
 using Serilog;
 using Serilog.Events;
 
@@ -19,6 +16,14 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+#if WINDOWS
+        // La operación elevada termina sin cargar UI ni competir con la instancia de Configuración.
+        if (OperatingSystem.IsWindows() && Qapptia.Platform.Windows.WindowsAutoStartService.TryExecuteCommand(args, out int exitCode))
+        {
+            Environment.ExitCode = exitCode;
+            return;
+        }
+#endif
         var logDir = Qapptia.Core.Constants.DefaultLogDirectory;
         using var _log = LoggingBootstrap.ConfigureGlobal(logDir, LogEventLevel.Information, "config");
 

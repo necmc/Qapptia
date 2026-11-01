@@ -1,12 +1,7 @@
-using System;
 using System.Net;
-using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Services;
-using Xunit;
 
 namespace Qapptia.Core.Tests;
 
@@ -92,7 +87,8 @@ public class HttpUpdateCheckServiceTests
 
         Assert.Equal(UpdateCheckStatus.ServerUnavailable, result.Status);
         Assert.Null(result.LatestRelease);
-        Assert.Equal("Servidor no disponible (500).", result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.ServerUnavailable, result.Error);
+        Assert.Equal(500, result.HttpStatusCode);
     }
 
     [Fact]
@@ -122,7 +118,7 @@ public class HttpUpdateCheckServiceTests
         var result = await service.CheckForUpdatesAsync(ct: CancellationToken.None);
 
         Assert.Equal(UpdateCheckStatus.ServerUnavailable, result.Status);
-        Assert.Equal(Constants.UpdateErrorTimeout, result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.Timeout, result.Error);
     }
 
     [Fact]
@@ -136,7 +132,7 @@ public class HttpUpdateCheckServiceTests
         var result = await service.CheckForUpdatesAsync(ct: CancellationToken.None);
 
         Assert.Equal(UpdateCheckStatus.NoInternet, result.Status);
-        Assert.Equal(Constants.UpdateErrorNoInternet, result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.NoInternet, result.Error);
     }
 
     [Fact]
@@ -152,7 +148,7 @@ public class HttpUpdateCheckServiceTests
         var result = await service.CheckForUpdatesAsync(ct: cts.Token);
 
         Assert.Equal(UpdateCheckStatus.ConnectionFailed, result.Status);
-        Assert.Equal(Constants.UpdateErrorCheckCancelled, result.ErrorMessage);
+        Assert.Equal(UpdateCheckError.CheckCancelled, result.Error);
     }
 
     [Fact]

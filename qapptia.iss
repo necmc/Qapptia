@@ -5,6 +5,8 @@
 #define CaptureExeName "QapptiaCapture.exe"
 #define ConfigExeName "QapptiaConfig.exe"
 #define MyAppId "8B45E1B4-3F25-4A92-A746-3C62077DA820"
+#define AutoStartRunSubKey "Software\Microsoft\Windows\CurrentVersion\Run"
+#define AutoStartArguments "--capture"
 #ifndef AppVersion
   #define AppVersion "1.0.0"
 #endif
@@ -30,15 +32,15 @@ OutputDir={#OutputDir}
 OutputBaseFilename={#OutputBaseFilename}
 Compression=lzma2/ultra64
 SolidCompression=yes
-SetupMutex=QapptiaInstaller,Global\QapptiaInstaller,Global\QapptiaUninstaller
+SetupMutex=QapptiaInstaller,Global\QapptiaInstaller
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog commandline
 DisableWelcomePage=yes
-DisableDirPage=auto
+DisableDirPage=no
 UsePreviousAppDir=yes
 UsePreviousPrivileges=no
-UsePreviousTasks=yes
+UsePreviousTasks=no
 ShowLanguageDialog=no
 MinVersion=6.1sp1
 ArchitecturesAllowed=x64compatible
@@ -57,9 +59,15 @@ english.AutoStartDescription=Start Qapptia on system startup
 spanish.AutoStartDescription=Iniciar Qapptia al encender el equipo
 english.AdditionalOptions=Additional options:
 spanish.AdditionalOptions=Opciones adicionales:
+english.PermissionCheckOperation=Permission check
+spanish.PermissionCheckOperation=Comprobación de permisos
+english.UninstallPermissionStopped=Uninstall was not completed.%n%nPlease correct the problem and run Uninstall again.
+spanish.UninstallPermissionStopped=La desinstalación no se ha completado.%n%nPor favor, solucione el problema y ejecute nuevamente el programa de desinstalación.
 
 english.PrepareInstallFailed=Setup could not prepare the application files because another process has locked them.%n%nPlease close any running applications and try again.
 spanish.PrepareInstallFailed=El programa de instalación no pudo preparar los archivos de la aplicación porque otro proceso los tiene bloqueados.%n%nPor favor, cierre cualquier aplicación abierta y vuelva a intentarlo.
+english.AutoStartApplyFailed=Setup could not configure automatic startup. The previous state will be restored where available. Check the installation log and permissions.
+spanish.AutoStartApplyFailed=No se pudo configurar el inicio automático. Se restaurará el estado anterior cuando esté disponible. Revise el registro de instalación y los permisos.
 
 english.AppRunningPromptInstall=Setup has detected that {#MyAppName} is currently running.%n%nPlease close the application from the system tray, then click Retry to continue, or Exit to cancel.
 spanish.AppRunningPromptInstall=El programa de instalación ha detectado que {#MyAppName} está ejecutándose.%n%nPor favor, ciérrelo desde la bandeja del sistema y haga clic en Reintentar para continuar, o en Salir para cancelar.
@@ -74,11 +82,23 @@ spanish.ButtonExit=&Salir
 english.AppRunningStillOpen={#MyAppName} is still running. Please close it from the system tray and click Retry.
 spanish.AppRunningStillOpen={#MyAppName} aún se encuentra en ejecución. Ciérrela desde la bandeja del sistema y presione Reintentar.
 
-english.ScopeTransitionUserToAll=A per-user installation of Qapptia already exists on this computer.%n%nDo you want Setup to automatically remove it to proceed with the installation for all users?
-spanish.ScopeTransitionUserToAll=Ya existe una instalación de Qapptia para el usuario actual en este equipo.%n%n¿Desea que el instalador la desinstale y limpie automáticamente para proceder con la instalación para todos los usuarios?
+english.ScopeTransitionUserToAll=A per-user installation of Qapptia already exists on this computer.%n%nDo you want to uninstall it and install Qapptia for all users?
+spanish.ScopeTransitionUserToAll=Ya existe una instalación de Qapptia para el usuario actual en este equipo.%n%n¿Desea desinstalarla e instalar Qapptia para todos los usuarios?
 
-english.ScopeTransitionAllToUser=An all-users installation of Qapptia already exists on this computer.%n%nDo you want Setup to automatically remove it to proceed with the per-user installation?
-spanish.ScopeTransitionAllToUser=Ya existe una instalación de Qapptia para todos los usuarios en este equipo.%n%n¿Desea que el instalador la desinstale y limpie automáticamente para proceder con la instalación por usuario?
+english.ScopeTransitionAllToUser=An all-users installation of Qapptia already exists on this computer.%n%nDo you want to uninstall it and install Qapptia for the current user only?
+spanish.ScopeTransitionAllToUser=Ya existe una instalación de Qapptia para todos los usuarios en este equipo.%n%n¿Desea desinstalarla e instalar Qapptia solo para el usuario actual?
+english.ScopeTransitionRequiresAdmin=A Qapptia installation for all users was detected. Administrator privileges are required to change it.
+spanish.ScopeTransitionRequiresAdmin=Se detectó una instalación de Qapptia para todos los usuarios. Para cambiarla se requieren permisos de administrador.
+english.UninstallStartFailed=The previous Qapptia uninstaller could not be started.
+spanish.UninstallStartFailed=No se pudo iniciar el desinstalador anterior de Qapptia.
+english.UninstallExitFailed=The previous Qapptia uninstaller finished with an error (code %1).
+spanish.UninstallExitFailed=El desinstalador anterior de Qapptia finalizó con un error (código %1).
+english.UninstallRecoveryPrompt=Do you want to remove the application files to continue?
+spanish.UninstallRecoveryPrompt=¿Desea eliminar los archivos de la aplicación para continuar?
+english.ScopeTransitionRemovalFailed=The previous Qapptia installation could not be removed. The new installation has not started. Correct the problem and try again.
+spanish.ScopeTransitionRemovalFailed=No se pudo retirar la instalación anterior de Qapptia. La nueva instalación no se ha iniciado. Solucione el problema e inténtelo de nuevo.
+english.UninstallInProgress=A Qapptia uninstallation is in progress. Wait for it to finish, then run Setup again.
+spanish.UninstallInProgress=Hay una desinstalación de Qapptia en curso. Espere a que termine y vuelva a ejecutar el instalador.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
@@ -117,7 +137,8 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Registry]
-Root: HKA; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"" --capture"; Flags: uninsdeletevalue; Tasks: autostart
+; Registrar siempre la limpieza al desinstalar, aunque el autoarranque se active después desde Configuración.
+Root: HKA; Subkey: "{#AutoStartRunSubKey}"; ValueType: none; ValueName: "{#MyAppName}"; Flags: uninsdeletevalue
 
 ; Compatibilidad TLS 1.2 para Windows 7 / 8.x (Schannel y WinHttp)
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client"; ValueType: dword; ValueName: "DisabledByDefault"; ValueData: "0"; Flags: createvalueifdoesntexist; Check: ShouldConfigureTls12
@@ -258,6 +279,12 @@ end;
 const
   AppSubKeyStandard   = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{' + '{#MyAppId}' + '}_is1';
   AppSubKeyLegacy     = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{' + '{#MyAppId}' + '}}_is1';
+  AutoStartRunKey = '{#AutoStartRunSubKey}';
+  AutoStartSnapshotFile = 'autostart';
+  PermissionProbePrefix = '.qapptia-permission-';
+  UninstallMutexName = 'Global\QapptiaUninstaller';
+  UninstallWaitIntervalMs = 100;
+  UninstallWaitMaxAttempts = 600;
 
 var
   PreviousInstallPath: string;
@@ -267,12 +294,132 @@ var
   BroughtToFrontOnce: Boolean;
   RecoveryDir: string;
   RecoveryCommitFailed: Boolean;
-  MigrationNeeded: Boolean;
+  MigrationNeeded, MigrationCompleted: Boolean;
   MigrationRootKey: Integer;
   MigrationInstallPath, MigrationUninstallExe: string;
   UninstallMutex: THandle;
   ProcessScanFailed: Boolean;
   BlockingProcess: string;
+
+function CheckPathPermissions(const Path: string; Writing: Boolean): string;
+var
+  DirectoryPath, ParentPath, ProbePath: string;
+  Handle: THandle;
+  Required, ErrorCode: DWORD;
+begin
+  Result := FmtMessage(SetupMessage(msgErrorCreatingDir), [Path]);
+  DirectoryPath := RemoveBackslashUnlessRoot(ExpandFileName(Path));
+  if FileExists(DirectoryPath) then Exit;
+  while not DirExists(DirectoryPath) do
+  begin
+    ParentPath := ExtractFileDir(DirectoryPath);
+    if (ParentPath = '') or (CompareText(ParentPath, DirectoryPath) = 0) then Exit;
+    DirectoryPath := ParentPath;
+  end;
+  Required := $00010000 {DELETE};
+  if Writing then Required := $00000027 {listar, crear archivos/subcarpetas y recorrer};
+  if Writing and DirExists(Path) then Required := Required or $00010000;
+  Handle := CreateFileW(DirectoryPath, Required, 7, 0, 3, $02000000 {FILE_FLAG_BACKUP_SEMANTICS}, 0);
+  if Handle <> -1 then
+  begin
+    CloseHandle(Handle);
+    if Writing then
+    begin
+      ProbePath := AddBackslash(DirectoryPath) + PermissionProbePrefix + IntToStr(GetCurrentProcessId) + GetDateTimeString('yyyymmddhhnnsszzz', '-', ':');
+      // DELETE_ON_CLOSE elimina la sonda al cerrar; se solicitan lectura, escritura y eliminación.
+      Handle := CreateFileW(ProbePath, $C0010000, 7, 0, 1 {CREATE_NEW}, $04000100 {temporal y DELETE_ON_CLOSE}, 0);
+      if Handle <> -1 then CloseHandle(Handle);
+    end;
+  end;
+  Result := '';
+  if Handle = -1 then
+  begin
+    ErrorCode := GetLastError;
+    Result := FmtMessage(SetupMessage(msgErrorFunctionFailedWithMessage), [ExpandConstant('{cm:PermissionCheckOperation}'), IntToStr(ErrorCode), SysErrorMessage(ErrorCode)]) + #13#10#13#10 + Path;
+  end;
+end;
+
+procedure ReportPermissionFailure(const ErrorText: string);
+var
+  Silent: Boolean;
+begin
+  Log(ErrorText);
+  if IsUninstaller then Silent := UninstallSilent else Silent := WizardSilent;
+  if Silent then Exit;
+  MsgBox(ErrorText, mbError, MB_OK);
+  if IsUninstaller then
+    MsgBox(ExpandConstant('{cm:UninstallPermissionStopped}'), mbError, MB_OK)
+  else
+    MsgBox(SetupMessage(msgSetupAborted), mbError, MB_OK);
+end;
+
+function GetAutoStartRoot: Integer;
+begin
+  if IsAdminInstallMode then Result := HKLM64 else Result := HKCU;
+end;
+
+function ClearAutoStart(RootKey: Integer): Boolean;
+begin
+  Result := not RegValueExists(RootKey, AutoStartRunKey, '{#MyAppName}');
+  if Result then Exit;
+  Result := RegDeleteValue(RootKey, AutoStartRunKey, '{#MyAppName}');
+  if Result then Result := not RegValueExists(RootKey, AutoStartRunKey, '{#MyAppName}');
+end;
+
+function ReadAutoStartSnapshot(RootKey: Integer; var Data: TArrayOfString): Boolean;
+begin
+  SetArrayLength(Data, 3);
+  if RootKey = HKCU then Data[0] := 'user' else Data[0] := 'machine';
+  Data[1] := '0';
+  Data[2] := '';
+  Result := True;
+  if RegValueExists(RootKey, AutoStartRunKey, '{#MyAppName}') then
+  begin
+    Result := RegQueryStringValue(RootKey, AutoStartRunKey, '{#MyAppName}', Data[2]);
+    if Result then Data[1] := '1';
+  end;
+end;
+
+function WriteAutoStartSnapshot(const Data: TArrayOfString): Boolean;
+var
+  RootKey: Integer;
+  Actual: string;
+begin
+  Result := False;
+  if GetArrayLength(Data) <> 3 then Exit;
+  if Data[0] = 'user' then RootKey := HKCU
+  else if Data[0] = 'machine' then RootKey := HKLM64
+  else Exit;
+  if Data[1] = '0' then Result := ClearAutoStart(RootKey)
+  else if Data[1] = '1' then
+  begin
+    Result := RegWriteStringValue(RootKey, AutoStartRunKey, '{#MyAppName}', Data[2]);
+    if Result then Result := RegQueryStringValue(RootKey, AutoStartRunKey, '{#MyAppName}', Actual);
+    if Result then Result := Actual = Data[2];
+  end;
+end;
+
+function ApplyAutoStartSelection: Boolean;
+var
+  RootKey: Integer;
+  Previous: TArrayOfString;
+  Command, Actual: string;
+begin
+  RootKey := GetAutoStartRoot;
+  Result := ReadAutoStartSnapshot(RootKey, Previous);
+  if not Result then Exit;
+  Result := ClearAutoStart(RootKey);
+  if Result and WizardIsTaskSelected('autostart') then
+  begin
+    Command := '"' + ExpandConstant('{app}\{#MyAppExeName}') + '" {#AutoStartArguments}';
+    Result := RegWriteStringValue(RootKey, AutoStartRunKey, '{#MyAppName}', Command);
+    if Result then Result := RegQueryStringValue(RootKey, AutoStartRunKey, '{#MyAppName}', Actual);
+    if Result then Result := Actual = Command;
+  end;
+  if not Result then
+    if not WriteAutoStartSnapshot(Previous) then
+      Log('No se pudo restaurar el autoarranque anterior.');
+end;
 
 function GetProcessExePath(PID: DWORD): string;
 var
@@ -584,7 +731,7 @@ begin
   end;
 end;
 
-function RunUninstallerBounded(const UninsExe: string; var ExitCode: DWORD): Boolean;
+function RunUninstallerBounded(const UninsExe: string; var ExitCode: DWORD; var Started: Boolean): Boolean;
 var
   StartupInfo: TStartupInfo32;
   ProcessInfo: TProcessInformation32;
@@ -593,6 +740,7 @@ var
   WaitCount: Integer;
 begin
   Result := False;
+  Started := False;
   ExitCode := DWORD(-1);
   StartupInfo.cb := SizeOf(StartupInfo);
   StartupInfo.lpReserved := 0;
@@ -620,19 +768,32 @@ begin
     Result := True;
     Exit;
   end;
+  Started := True;
   try
     WaitCount := 0;
     repeat
-      WaitResult := WaitForSingleObject(ProcessInfo.hProcess, 100);
+      WaitResult := WaitForSingleObject(ProcessInfo.hProcess, UninstallWaitIntervalMs);
       AppProcessMessage;
       WaitCount := WaitCount + 1;
-    until (WaitResult <> $00000102) or (WaitCount >= 600);
+    until (WaitResult <> $00000102) or (WaitCount >= UninstallWaitMaxAttempts);
     if WaitResult <> 0 then
     begin
       Log('El desinstalador anterior no terminó dentro del plazo.');
       Exit;
     end;
     Result := GetExitCodeProcess(ProcessInfo.hProcess, ExitCode);
+    if Result and (ExitCode = 0) then
+    begin
+      // El auxiliar de Inno puede seguir limpiando después de finalizar el proceso original.
+      while CheckForMutexes(UninstallMutexName) and (WaitCount < UninstallWaitMaxAttempts) do
+      begin
+        Sleep(UninstallWaitIntervalMs);
+        AppProcessMessage;
+        WaitCount := WaitCount + 1;
+      end;
+      Result := not CheckForMutexes(UninstallMutexName);
+      if not Result then Log('El desinstalador anterior no completó su cierre dentro del plazo.');
+    end;
   finally
     CloseHandle(ProcessInfo.hThread);
     CloseHandle(ProcessInfo.hProcess);
@@ -645,8 +806,9 @@ function CanDeleteDirectoryFiles(const DirPath: string; var BlockedPath: string)
 function PurgeInstallationHive(RootKey: Integer; const InstPath, UninsExe: string): Boolean;
 var
   ExitCode: DWORD;
-  NeedsRescue: Boolean;
-  AppDir, AppExe, NormalPath, UninsName, BlockedPath: string;
+  NeedsRescue, UninstallerStarted: Boolean;
+  AppDir, AppExe, NormalPath, UninsName, BlockedPath, RecoveryMessage: string;
+  StartupRoot: Integer;
 begin
   Result := False;
   if (RootKey <> HKCU) and not IsAdmin then
@@ -663,14 +825,16 @@ begin
       (CompareText(NormalPath, ExpandConstant('{win}')) = 0)) then Exit;
 
   NeedsRescue := True;
+  UninstallerStarted := False;
   UninsName := Uppercase(ExtractFileName(UninsExe));
   if (NormalPath <> '') and (Pos('UNINS', UninsName) = 1) and
      (CompareText(ExtractFileExt(UninsExe), '.exe') = 0) and
      (CompareText(RemoveBackslashUnlessRoot(ExpandFileName(ExtractFileDir(UninsExe))), NormalPath) = 0) and
      FileExists(UninsExe) then
   begin
-    if not RunUninstallerBounded(UninsExe, ExitCode) then Exit;
-    Log('Desinstalador anterior finalizó con código: ' + IntToStr(ExitCode));
+    if not RunUninstallerBounded(UninsExe, ExitCode, UninstallerStarted) then Exit;
+    if UninstallerStarted then
+      Log('Desinstalador anterior finalizó con código: ' + IntToStr(ExitCode));
     NeedsRescue := ExitCode <> 0;
   end;
 
@@ -681,7 +845,12 @@ begin
       Log('La instalación anterior requiere recuperación interactiva.');
       Exit;
     end;
-    if MsgBox('No se pudo ejecutar el desinstalador anterior. ¿Desea eliminar los binarios de Qapptia para continuar?', mbConfirmation, MB_YESNO) <> IDYES then Exit;
+    if UninstallerStarted then
+      RecoveryMessage := FmtMessage(ExpandConstant('{cm:UninstallExitFailed}'), [IntToStr(ExitCode)])
+    else
+      RecoveryMessage := ExpandConstant('{cm:UninstallStartFailed}');
+    if MsgBox(RecoveryMessage + #13#10#13#10 + ExpandConstant('{cm:UninstallRecoveryPrompt}'),
+      mbConfirmation, MB_YESNO) <> IDYES then Exit;
   end;
 
   if NormalPath <> '' then
@@ -712,6 +881,12 @@ begin
     end;
   end;
 
+  if RootKey = HKCU then StartupRoot := HKCU else StartupRoot := HKLM64;
+  if not ClearAutoStart(StartupRoot) then
+  begin
+    Log('No se pudo limpiar el autoarranque de la instalación anterior.');
+    Exit;
+  end;
   RegDeleteKeyIncludingSubkeys(RootKey, AppSubKeyStandard);
   RegDeleteKeyIncludingSubkeys(RootKey, AppSubKeyLegacy);
   if RegKeyExists(RootKey, AppSubKeyStandard) or RegKeyExists(RootKey, AppSubKeyLegacy) then Exit;
@@ -729,6 +904,14 @@ begin
 
   // Carga de instalación previa en el registro para resolución de rutas
   HasPreviousInstall := FindPreviousInstall(PreviousRootKey, PreviousUninstallExe, PreviousInstallPath);
+
+  // Consultar la desinstalación sin crear su mutex desde el instalador.
+  if CheckForMutexes(UninstallMutexName) then
+  begin
+    Log(ExpandConstant('{cm:UninstallInProgress}'));
+    if not WizardSilent then MsgBox(ExpandConstant('{cm:UninstallInProgress}'), mbError, MB_OK);
+    Exit;
+  end;
 
   // 1. Validación al arrancar el instalador: Qapptia no debe estar en ejecución
   if not EnsureQapptiaClosed(False) then
@@ -777,7 +960,7 @@ begin
       begin
         Log('El cambio de ámbito requiere permisos de administrador.');
         Result := False;
-        MsgBox('Para cambiar la instalación existente se requieren permisos de administrador.', mbError, MB_OK);
+        MsgBox(ExpandConstant('{cm:ScopeTransitionRequiresAdmin}'), mbError, MB_OK);
         Exit;
       end;
       if SuppressibleMsgBox(ExpandConstant('{cm:ScopeTransitionAllToUser}'), mbConfirmation, MB_YESNO, IDYES) = IDYES then
@@ -800,7 +983,7 @@ end;
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
   Result := False;
-  if HasPreviousInstall and (PageID = wpSelectDir) then
+  if HasPreviousInstall and not MigrationNeeded and (PageID = wpSelectDir) then
     Result := True;
 end;
 
@@ -882,6 +1065,7 @@ function RestorePreviousInstallation(const BackupDir, TargetDir: string): Boolea
 var
   OldApp, OldExe, AppDir, AppExe: string;
   Owner: AnsiString;
+  StartupData: TArrayOfString;
 begin
   Result := False;
   if not DirExists(BackupDir) then
@@ -917,6 +1101,14 @@ begin
     if FileExists(AppExe) and not DeleteFile(AppExe) then Exit;
     if not RenameFile(OldExe, AppExe) then Exit;
   end;
+  if FileExists(BackupDir + '\' + AutoStartSnapshotFile) then
+  begin
+    if not LoadStringsFromFile(BackupDir + '\' + AutoStartSnapshotFile, StartupData) then Exit;
+    if not WriteAutoStartSnapshot(StartupData) then Exit;
+    if not DeleteFile(BackupDir + '\' + AutoStartSnapshotFile) then Exit;
+  end;
+  if FileExists(BackupDir + '\' + AutoStartSnapshotFile + '.tmp') then
+    if not DeleteFile(BackupDir + '\' + AutoStartSnapshotFile + '.tmp') then Exit;
   if not DeleteFile(BackupDir + '\owner') then Exit;
   RemoveDir(BackupDir);
   Result := not DirExists(BackupDir);
@@ -925,6 +1117,7 @@ end;
 function PreservePreviousInstallation(const TargetDir: string): Boolean;
 var
   AppDir, AppExe: string;
+  StartupData: TArrayOfString;
 begin
   Result := False;
   RecoveryDir := TargetDir + '\.qapptia-recovery';
@@ -952,6 +1145,15 @@ begin
     RemoveDir(RecoveryDir);
     Exit;
   end;
+  // Conservar el autoarranque junto a los binarios para recuperar también tras una interrupción.
+  if not ReadAutoStartSnapshot(GetAutoStartRoot, StartupData) then
+  begin
+    Log('No se pudo preservar el estado del autoarranque antes de instalar.');
+    Exit;
+  end;
+  if not SaveStringsToUTF8File(RecoveryDir + '\' + AutoStartSnapshotFile + '.tmp', StartupData, False) then Exit;
+  if not RenameFile(RecoveryDir + '\' + AutoStartSnapshotFile + '.tmp',
+                    RecoveryDir + '\' + AutoStartSnapshotFile) then Exit;
   if DirExists(AppDir) and not RenameFile(AppDir, RecoveryDir + '\app') then Exit;
   if FileExists(AppExe) and not RenameFile(AppExe, RecoveryDir + '\{#MyAppExeName}') then
   begin
@@ -962,8 +1164,6 @@ begin
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
-var
-  MigrationSucceeded: Boolean;
 begin
   if CurStep <> ssPostInstall then Exit;
   if not FileExists(ExpandConstant('{app}\{#MyAppExeName}')) or
@@ -979,6 +1179,14 @@ begin
       MsgBox('La instalación no contiene todos los archivos necesarios. Se intentará restaurar la versión anterior.', mbError, MB_OK);
     Exit;
   end;
+  if RecoveryCommitFailed then Exit;
+  if not ApplyAutoStartSelection then
+  begin
+    RecoveryCommitFailed := True;
+    Log('No se pudo aplicar la selección de autoarranque.');
+    if not WizardSilent then MsgBox(ExpandConstant('{cm:AutoStartApplyFailed}'), mbError, MB_OK);
+    Exit;
+  end;
   if (RecoveryDir <> '') and DirExists(RecoveryDir) then
   begin
     if SaveStringToFile(RecoveryDir + '\committed', 'ok', False) then
@@ -989,34 +1197,6 @@ begin
       Log('No se pudo confirmar la instalación; se intentará restaurar: ' + RecoveryDir);
       if not WizardSilent then
         MsgBox('No se pudo confirmar la actualización. Se intentará restaurar la versión anterior.', mbError, MB_OK);
-    end;
-  end;
-  if MigrationNeeded and not RecoveryCommitFailed then
-  begin
-    if (MigrationInstallPath <> '') and
-       (CompareText(RemoveBackslashUnlessRoot(ExpandFileName(MigrationInstallPath)),
-                    RemoveBackslashUnlessRoot(ExpandFileName(ExpandConstant('{app}')))) = 0) then
-    begin
-      Log('No se eliminará la instalación anterior porque comparte el directorio de la instalación nueva.');
-      MigrationSucceeded := False;
-    end
-    else
-      MigrationSucceeded := PurgeInstallationHive(MigrationRootKey, MigrationInstallPath, MigrationUninstallExe);
-    if WizardIsTaskSelected('desktopicon') then
-    begin
-      try
-        CreateShellLink(ExpandConstant('{autodesktop}\{#MyAppName}.lnk'), '',
-          ExpandConstant('{app}\{#MyAppExeName}'), '', ExpandConstant('{app}'), '', 0, SW_SHOWNORMAL);
-      except
-        Log('No se pudo recrear el acceso directo: ' + GetExceptionMessage);
-      end;
-    end;
-    if not MigrationSucceeded then
-    begin
-      RecoveryCommitFailed := True;
-      Log('La instalación nueva está disponible, pero no se pudo retirar la instalación anterior: ' + MigrationInstallPath);
-      if not WizardSilent then
-        MsgBox('Qapptia se instaló, pero no se pudo retirar la instalación anterior. Revise los permisos y archivos en uso antes de reintentar.', mbError, MB_OK);
     end;
   end;
 end;
@@ -1112,7 +1292,38 @@ begin
     Exit;
   end;
 
-  // 2. Preparar y aislar directorios para evitar colisiones de archivos
+  // Validar antes de mover binarios, recuperar archivos o retirar otra instalación.
+  Result := CheckPathPermissions(ExpandConstant('{app}'), True);
+  if (Result = '') and MigrationNeeded and not MigrationCompleted and (MigrationInstallPath <> '') then
+    Result := CheckPathPermissions(MigrationInstallPath, True);
+  if Result <> '' then
+  begin
+    ReportPermissionFailure(Result);
+    if not WizardSilent then PostMessage(WizardForm.Handle, $0010 {WM_CLOSE}, 0, 0);
+    Exit;
+  end;
+
+  // Retirar el ámbito anterior antes de preparar o copiar la instalación nueva.
+  if MigrationNeeded and not MigrationCompleted then
+  begin
+    if (MigrationInstallPath <> '') and
+       (CompareText(RemoveBackslashUnlessRoot(ExpandFileName(MigrationInstallPath)),
+                    RemoveBackslashUnlessRoot(ExpandFileName(ExpandConstant('{app}')))) = 0) then
+    begin
+      Log('No se eliminará la instalación anterior porque comparte el directorio de la instalación nueva.');
+      Result := ExpandConstant('{cm:ScopeTransitionRemovalFailed}');
+      Exit;
+    end;
+    if not PurgeInstallationHive(MigrationRootKey, MigrationInstallPath, MigrationUninstallExe) then
+    begin
+      Result := ExpandConstant('{cm:ScopeTransitionRemovalFailed}');
+      Log(Result + ' ' + MigrationInstallPath);
+      Exit;
+    end;
+    MigrationCompleted := True;
+  end;
+
+  // Preparar y aislar directorios para evitar colisiones de archivos.
   if not PreservePreviousInstallation(ExpandConstant('{app}')) then
   begin
     Result := ExpandConstant('{cm:PrepareInstallFailed}');
@@ -1123,7 +1334,7 @@ end;
 function InitializeUninstall: Boolean;
 var
   ErrorCode: DWORD;
-  BackupDir, BlockedPath: string;
+  BackupDir, BlockedPath, PermissionError: string;
 begin
   Result := False;
   if (ExpandConstant('{param:QAPPTIAMIGRATION|}') <> '1') and
@@ -1132,7 +1343,7 @@ begin
     if not UninstallSilent then MsgBox('Hay una instalación de Qapptia en curso. Espere a que termine.', mbError, MB_OK);
     Exit;
   end;
-  UninstallMutex := CreateMutexW(0, False, 'Global\QapptiaUninstaller');
+  UninstallMutex := CreateMutexW(0, False, UninstallMutexName);
   ErrorCode := GetLastError;
   if UninstallMutex = 0 then Exit;
   if ErrorCode = 183 then
@@ -1144,9 +1355,10 @@ begin
   end;
   if not EnsureQapptiaClosed(True) then Exit;
   BackupDir := ExpandConstant('{app}\.qapptia-recovery');
-  if not RestorePreviousInstallation(BackupDir, ExpandConstant('{app}')) then
+  PermissionError := CheckPathPermissions(ExpandConstant('{app}'), DirExists(BackupDir));
+  if PermissionError <> '' then
   begin
-    if not UninstallSilent then MsgBox('No se pudo recuperar la instalación anterior. Revise los archivos en: ' + BackupDir, mbError, MB_OK);
+    ReportPermissionFailure(PermissionError);
     Exit;
   end;
   BlockedPath := ExpandConstant('{app}\{#MyAppExeName}');
@@ -1154,8 +1366,12 @@ begin
      not CanDeleteDirectoryFiles(ExpandConstant('{app}\app'), BlockedPath) then
   begin
     Log('No se puede comenzar la desinstalación: ' + BlockedPath);
-    if not UninstallSilent then
-      MsgBox('No se puede desinstalar porque un archivo está en uso o no tiene permisos: ' + BlockedPath, mbError, MB_OK);
+    ReportPermissionFailure('No se puede desinstalar porque un archivo está en uso o no tiene permisos: ' + BlockedPath);
+    Exit;
+  end;
+  if not RestorePreviousInstallation(BackupDir, ExpandConstant('{app}')) then
+  begin
+    if not UninstallSilent then MsgBox('No se pudo recuperar la instalación anterior. Revise los archivos en: ' + BackupDir, mbError, MB_OK);
     Exit;
   end;
   Result := True;
@@ -1167,11 +1383,20 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  PermissionError: string;
 begin
   if CurUninstallStep = usUninstall then
   begin
     if not EnsureQapptiaClosed(True) then
       Abort;
+    // Revalidar tras la confirmación del usuario, antes de eliminar archivos o registros.
+    PermissionError := CheckPathPermissions(ExpandConstant('{app}'), False);
+    if PermissionError <> '' then
+    begin
+      ReportPermissionFailure(PermissionError);
+      Abort;
+    end;
   end
   else if CurUninstallStep = usPostUninstall then
   begin

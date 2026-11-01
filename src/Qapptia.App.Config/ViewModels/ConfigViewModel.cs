@@ -1,28 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Qapptia.Core;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
-using Qapptia.Core.Ipc;
-using Qapptia.Core.Services;
-using Qapptia.Core.Theme;
+using Qapptia.UI.Components.Services;
 using Qapptia.UI.Components.Theme;
-#if WINDOWS
-using Qapptia.Platform.Windows;
-#elif LINUX
-using Qapptia.Platform.Linux;
-#elif MAC
-using Qapptia.Platform.MacOS;
-#endif
 using ConfigConstants = Qapptia.App.Config.Common.Constants;
+using ConfigPresentation = Qapptia.App.Config.Common.ConfigPresentation;
 
 namespace Qapptia.App.Config.ViewModels;
 
@@ -31,14 +17,16 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     private static readonly System.Text.CompositeFormat s_updateAvailableFormat = System.Text.CompositeFormat.Parse(ConfigConstants.UpdateStatusAvailableFormat);
     private static readonly System.Text.CompositeFormat s_updateUpToDateFormat = System.Text.CompositeFormat.Parse(ConfigConstants.UpdateStatusUpToDateFormat);
 
-    private readonly JsonConfigService _configService;
+    private readonly IConfigSettingsService _settingsService;
+    private readonly IConfigProcessService _processService;
     private readonly IUpdateCheckService _updateCheckService;
     private readonly IShellService _shellService;
-    private readonly IAutoStartService _autoStartService;
     private readonly SponsorVisualInfo _sponsorVisual;
-    private QapptiaConfig _config;
+    private AutoStartState _autoStartState = new(AutoStartScope.Unsupported, false);
+    private readonly CancellationTokenSource _lifetimeCts = new();
+    private bool _disposed;
 
-    public IReadOnlyList<string> ThemeOptions { get; } = ThemeConstants.DisplayNames;
+    public IReadOnlyList<string> ThemeOptions { get; } = ConfigPresentation.ThemeNames;
 
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -84,10 +72,25 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _autoStart;
 
-    public bool IsAutoStartSupported => _autoStartService.IsSupported;
+    public bool IsAutoStartSupported => _settingsService.IsAutoStartSupported;
 
     [ObservableProperty]
-    private string _selectedTheme = ThemeConstants.DisplayNameSystem;
+    [NotifyPropertyChangedFor(nameof(CanEditAutoStart))]
+    [NotifyPropertyChangedFor(nameof(AutoStartStatusMessage))]
+    private bool _isLoadingAutoStart;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEditAutoStart))]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    private bool _isSaving;
+
+    public bool CanEditAutoStart => _autoStartState.CanConfigure && !IsLoadingAutoStart && !IsSaving;
+    public string AutoStartStatusMessage => IsLoadingAutoStart ? ConfigConstants.AutoStartLoading : ConfigPresentation.GetAutoStartStatusMessage(_autoStartState);
+
+    private bool CanSave => !IsSaving;
+
+    [ObservableProperty]
+    private string _selectedTheme = ConfigConstants.ThemeSystem;
 
     [ObservableProperty]
     private string _savePath = string.Empty;
@@ -138,64 +141,63 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     public Func<Task<string?>>? RequestBrowsePath { get; set; }
 
     public ConfigViewModel(
-        JsonConfigService? configService = null,
-        IUpdateCheckService? updateCheckService = null,
-        IShellService? shellService = null,
-        IAutoStartService? autoStartService = null,
+        IConfigSettingsService settingsService,
+        IUpdateCheckService updateCheckService,
+        IShellService shellService,
+        IConfigProcessService processService,
         bool startInAboutTab = false)
     {
-        _configService = configService ?? new JsonConfigService(Qapptia.Core.Constants.DefaultConfigPath);
-        _config = _configService.Current;
-
-#if WINDOWS
-        _shellService = shellService ?? (OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? new WindowsShellService() : NullShellService.Instance);
-        _autoStartService = autoStartService ?? (OperatingSystem.IsWindowsVersionAtLeast(6, 1) ? new WindowsAutoStartService() : NullAutoStartService.Instance);
-#elif LINUX
-        _shellService = shellService ?? new LinuxShellService();
-        _autoStartService = autoStartService ?? new LinuxAutoStartService();
-#elif MAC
-        _shellService = shellService ?? new MacOSShellService();
-        _autoStartService = autoStartService ?? new MacOSAutoStartService();
-#else
-        _shellService = shellService ?? NullShellService.Instance;
-        _autoStartService = autoStartService ?? NullAutoStartService.Instance;
-#endif
-        _updateCheckService = updateCheckService ?? new HttpUpdateCheckService();
+        _settingsService = settingsService;
+        _updateCheckService = updateCheckService;
+        _shellService = shellService;
+        _processService = processService;
         _sponsorVisual = SponsorVisualHelper.GetRandomCombination();
         _selectedTabIndex = startInAboutTab ? 3 : 0;
-
         LoadFromConfig();
     }
 
     private void LoadFromConfig()
     {
-        AutoStart = _config.AutoStart;
-        SelectedTheme = ThemeConstants.ToDisplayName(_config.Theme);
-        SavePath = _config.SavePath;
-        FilenameFormat = _config.FilenameFormat;
-        SubfolderMonth = _config.SubfolderMonth;
-        SubfolderDay = _config.SubfolderDay;
-        SubfolderHour = _config.SubfolderHour;
-        ShowMouse = _config.ShowMouse;
-        HighlightMouse = _config.HighlightMouse;
-        ManualTimer = _config.ManualTimer;
-        ShortcutScreen = _config.ShortcutScreen;
-        ShortcutArea = _config.ShortcutArea;
-        CopyToClipboardScreen = _config.CopyToClipboardScreen;
-        CopyToClipboardArea = _config.CopyToClipboardArea;
-        CaptureAllScreens = _config.CaptureAllScreens;
+        var config = _settingsService.Current;
+        AutoStart = false;
+        SelectedTheme = ConfigPresentation.ToThemeName(config.Theme);
+        SavePath = config.SavePath;
+        FilenameFormat = config.FilenameFormat;
+        SubfolderMonth = config.SubfolderMonth;
+        SubfolderDay = config.SubfolderDay;
+        SubfolderHour = config.SubfolderHour;
+        ShowMouse = config.ShowMouse;
+        HighlightMouse = config.HighlightMouse;
+        ManualTimer = config.ManualTimer;
+        ShortcutScreen = config.ShortcutScreen;
+        ShortcutArea = config.ShortcutArea;
+        CopyToClipboardScreen = config.CopyToClipboardScreen;
+        CopyToClipboardArea = config.CopyToClipboardArea;
+        CaptureAllScreens = config.CaptureAllScreens;
 
-        if (_autoStartService.IsSupported)
+        LoadAutoStartFromSystem();
+    }
+
+    private void LoadAutoStartFromSystem()
+    {
+        if (!_settingsService.IsAutoStartSupported) return;
+
+        IsLoadingAutoStart = true;
+        _ = LoadAutoStartAsync();
+    }
+
+    private async Task LoadAutoStartAsync()
+    {
+        try
         {
-            _ = Task.Run(() =>
-            {
-                var isEnabled = _autoStartService.IsAutoStartEnabled();
-                Dispatcher.UIThread.Post(() =>
-                {
-                    AutoStart = isEnabled;
-                });
-            });
+            var state = await _settingsService.GetAutoStartStateAsync(_lifetimeCts.Token);
+            if (_disposed) return;
+            _autoStartState = state;
+            AutoStart = state.IsEnabled;
+            IsLoadingAutoStart = false;
+            if (state.HasError) ShowFooter(ConfigConstants.FooterAutoStartQueryError, isError: true);
         }
+        catch (OperationCanceledException) when (_disposed) { }
     }
 
     [RelayCommand]
@@ -211,64 +213,51 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private void Save()
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private async Task SaveAsync()
     {
-        if (string.IsNullOrWhiteSpace(SavePath) || !Directory.Exists(Environment.ExpandEnvironmentVariables(SavePath)))
-        {
-            ShowFooter("Error: La ruta de guardado es inválida o no existe.", isError: true);
-            return;
-        }
-
-        _config.AutoStart = AutoStart;
-        if (_autoStartService.IsSupported)
-        {
-            _autoStartService.SetAutoStartEnabled(AutoStart);
-        }
-
-        _config.Theme = ThemeConstants.FromDisplayName(SelectedTheme);
-        _config.SavePath = SavePath;
-        _config.FilenameFormat = string.IsNullOrWhiteSpace(FilenameFormat) ? Qapptia.Core.Constants.DefaultFilenameFormat : FilenameFormat;
-        _config.SubfolderMonth = SubfolderMonth;
-        _config.SubfolderDay = SubfolderDay;
-        _config.SubfolderHour = SubfolderHour;
-        _config.ShowMouse = ShowMouse;
-        _config.HighlightMouse = HighlightMouse && ShowMouse;
-        _config.ManualTimer = ManualTimer;
-        _config.ShortcutScreen = string.IsNullOrWhiteSpace(ShortcutScreen) ? "ctrl+shift+q" : ShortcutScreen;
-        _config.ShortcutArea = string.IsNullOrWhiteSpace(ShortcutArea) ? "ctrl+shift+a" : ShortcutArea;
-        _config.CopyToClipboardScreen = CopyToClipboardScreen;
-        _config.CopyToClipboardArea = CopyToClipboardArea;
-        _config.CaptureAllScreens = CaptureAllScreens;
-
+        bool requestedAutoStart = AutoStart;
+        IsSaving = true;
+        FooterMessage = ConfigConstants.FooterConfigSaving;
+        IsFooterError = false;
         try
         {
-            _configService.Save();
+            var changes = new ConfigChanges(
+                ConfigPresentation.FromThemeName(SelectedTheme), SavePath, FilenameFormat,
+                SubfolderMonth, SubfolderDay, SubfolderHour, ShowMouse, HighlightMouse, ManualTimer,
+                ShortcutScreen, ShortcutArea, CopyToClipboardScreen, CopyToClipboardArea, CaptureAllScreens);
+            var saved = _settingsService.SavePreferences(changes, IsLoadingAutoStart ? null : _autoStartState, requestedAutoStart);
+            if (!saved.IsValid)
+            {
+                ShowFooter(ConfigConstants.FooterInvalidSavePath, isError: true);
+                return;
+            }
 
-            // Aplicar el nuevo tema a la propia ventana de Configuración al guardar
-            ThemeManager.ApplyTheme(_config.Theme);
-
+            // Aplicar el nuevo tema a la propia ventana de Configuración al guardar.
+            ThemeManager.ApplyTheme(saved.Theme);
+            if (saved.ChangeAutoStart)
+            {
+                var result = await _settingsService.SetAutoStartAsync(requestedAutoStart, _lifetimeCts.Token);
+                if (_disposed) return;
+                _autoStartState = result.State;
+                AutoStart = result.State.IsEnabled;
+                OnPropertyChanged(nameof(CanEditAutoStart));
+                OnPropertyChanged(nameof(AutoStartStatusMessage));
+                if (!result.Succeeded)
+                {
+                    ShowFooter(result.Cancelled ? ConfigConstants.FooterAutoStartCancelled : ConfigConstants.FooterAutoStartSaveError, isError: true);
+                    return;
+                }
+            }
             ShowFooter(ConfigConstants.FooterConfigSaved, isError: false);
-
-            // Difundir notificación de tema y refresco a Capture y Editor en caliente
-            NotifyProcesses(new ThemeChangedNotification { Theme = _config.Theme });
-            NotifyProcesses(new RefreshTrayIconRequest());
         }
         catch (Exception ex)
         {
             ShowFooter($"{ConfigConstants.FooterSaveErrorPrefix}{ex.Message}", isError: true);
         }
-    }
-
-    private static void NotifyProcesses(IpcMessage message)
-    {
-        string[] channels = [IpcChannels.Capture, IpcChannels.Editor];
-        foreach (var channel in channels)
+        finally
         {
-            _ = Task.Run(async () =>
-            {
-                try { await QapptiaIpcClient.SendAsync(channel, message).ConfigureAwait(false); } catch { }
-            });
+            IsSaving = false;
         }
     }
 
@@ -285,7 +274,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
 
         if (!isError)
         {
-            Task.Delay(5000).ContinueWith(_ =>
+            Task.Delay(ConfigConstants.FooterMessageDurationMs).ContinueWith(_ =>
             {
                 if (FooterMessage == message) FooterMessage = string.Empty;
             });
@@ -351,15 +340,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                     UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateAvailableFormat, result.LatestRelease.Version);
                     UpdateButtonText = ConfigConstants.UpdateButtonDownload;
 
-                    var version = result.LatestRelease.Version;
-                    var dlUrl = DownloadUrl;
-                    InMemoryUpdateStateStore.SetUpdate(version, dlUrl);
-
-                    BroadcastUpdateNotification(new UpdateAvailableNotification
-                    {
-                        Version = version,
-                        DownloadUrl = dlUrl
-                    });
+                    _processService.PublishUpdate(result.LatestRelease);
                 }
                 else if (result.Status == UpdateCheckStatus.UpToDate)
                 {
@@ -368,12 +349,11 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                     UpdateStatusMessage = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateUpToDateFormat, Constants.AppVersion);
                     UpdateButtonText = ConfigConstants.UpdateButtonCheck;
 
-                    InMemoryUpdateStateStore.Clear();
-                    BroadcastUpdateNotification(new UpdateClearedNotification());
+                    _processService.PublishUpdate(null);
                 }
                 else
                 {
-                    UpdateStatusMessage = result.ErrorMessage ?? ConfigConstants.UpdateStatusConnectError;
+                    UpdateStatusMessage = ConfigPresentation.GetUpdateErrorMessage(result);
                     UpdateButtonText = ConfigConstants.UpdateButtonRetry;
                 }
             });
@@ -401,36 +381,6 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
                 }
             });
         }
-    }
-
-    private static void BroadcastUpdateNotification(IpcMessage notification)
-    {
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await QapptiaIpcClient.SendAsync(
-                    IpcChannels.Editor,
-                    notification,
-                    timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
-            }
-            catch
-            {
-                // Si Editor no está en ejecución, se omite silenciosamente
-            }
-
-            try
-            {
-                await QapptiaIpcClient.SendAsync(
-                    IpcChannels.Capture,
-                    notification,
-                    timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
-            }
-            catch
-            {
-                // Si Capture no está en ejecución, se omite silenciosamente
-            }
-        });
     }
 
     private void StartUpdateCooldown()
@@ -495,43 +445,23 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     {
         try
         {
-            var response = await QapptiaIpcClient.SendAsync(
-                IpcChannels.Editor,
-                new ShowHelpRequest(),
-                timeoutMs: Qapptia.Core.Constants.QuickIpcTimeoutMs).ConfigureAwait(false);
-
-            if (response is Ack)
-            {
-                return;
-            }
+            bool opened = await _processService.OpenEditorHelpAsync(_lifetimeCts.Token);
+            if (!_disposed && !opened) ShowFooter(ConfigConstants.FooterEditorNotFound, isError: true);
         }
-        catch
-        {
-            // Fallback si el Editor no está abierto o no responde a tiempo
-        }
-
-        try
-        {
-            var exeName = Constants.EditorExecutableName;
-            var exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeName);
-            if (File.Exists(exePath))
-            {
-                Process.Start(new ProcessStartInfo(exePath, Constants.ArgHelp) { UseShellExecute = true });
-            }
-            else
-            {
-                ShowFooter(Constants.EditorAppName + " no encontrado", isError: true);
-            }
-        }
+        catch (OperationCanceledException) when (_disposed) { }
         catch (Exception ex)
         {
             Serilog.Log.Error(ex, "Error al lanzar el Editor con argumento de ayuda desde Configuración.");
-            ShowFooter("Error al abrir la guía del Editor", isError: true);
+            if (!_disposed) ShowFooter(ConfigConstants.FooterHelpError, isError: true);
         }
     }
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        _lifetimeCts.Cancel();
+        _lifetimeCts.Dispose();
         if (_updateCheckService is IDisposable disposable)
         {
             disposable.Dispose();

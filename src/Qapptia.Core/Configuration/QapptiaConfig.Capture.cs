@@ -44,10 +44,10 @@ public sealed partial class QapptiaConfig
     // === Atajos (formato keyboard: ctrl+shift+q) ===
 
     [JsonPropertyName("shortcut_screen")]
-    public string ShortcutScreen { get; set; } = "ctrl+shift+q";
+    public string ShortcutScreen { get; set; } = Constants.DefaultShortcutScreen;
 
     [JsonPropertyName("shortcut_area")]
-    public string ShortcutArea { get; set; } = "ctrl+shift+a";
+    public string ShortcutArea { get; set; } = Constants.DefaultShortcutArea;
 
     [JsonPropertyName("shortcut_flow")]
     public string ShortcutFlow { get; set; } = "ctrl+shift+f";

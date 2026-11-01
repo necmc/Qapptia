@@ -4,7 +4,6 @@ using Qapptia.Core;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Capture;
 using Qapptia.Core.Configuration;
-using Qapptia.Core.Ipc;
 using Serilog;
 
 namespace Qapptia.Capture;
@@ -62,8 +61,8 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
         _logger.Information("WakeUp recibido");
         _trayService?.RefreshIcon();
         _trayService?.ShowNotification(
-            Constants.NotificationTitleCapture,
-            Constants.NotificationMessageCaptureActive,
+            Qapptia.UI.Components.Common.Constants.NotificationTitleCapture,
+            Qapptia.UI.Components.Common.Constants.NotificationMessageCaptureActive,
             TrayNotificationType.Info,
             Constants.NotificationDurationMs);
     }

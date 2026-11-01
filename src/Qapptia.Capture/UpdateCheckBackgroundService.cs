@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Qapptia.Core;
 using Qapptia.Core.Abstractions;
@@ -15,7 +12,7 @@ namespace Qapptia.Capture;
 /// </summary>
 public sealed class UpdateCheckBackgroundService : BackgroundService
 {
-    private static readonly System.Text.CompositeFormat s_updateMessageFormat = System.Text.CompositeFormat.Parse(Constants.NotificationMessageUpdateAvailableFormat);
+    private static readonly System.Text.CompositeFormat s_updateMessageFormat = System.Text.CompositeFormat.Parse(Qapptia.UI.Components.Common.Constants.NotificationMessageUpdateAvailableFormat);
 
     private readonly PeriodicUpdateCoordinator _coordinator;
     private readonly ITrayIconService? _trayIconService;
@@ -45,7 +42,7 @@ public sealed class UpdateCheckBackgroundService : BackgroundService
 
             var message = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_updateMessageFormat, result.LatestRelease.Version);
             _trayIconService?.ShowNotification(
-                Constants.NotificationTitleUpdateAvailable,
+                Qapptia.UI.Components.Common.Constants.NotificationTitleUpdateAvailable,
                 message,
                 TrayNotificationType.Info,
                 Constants.NotificationDurationMs);

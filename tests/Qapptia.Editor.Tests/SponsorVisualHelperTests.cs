@@ -1,9 +1,6 @@
-using System;
-using System.Linq;
-using Qapptia.Core.Services;
-using Xunit;
+using Qapptia.UI.Components.Services;
 
-namespace Qapptia.Core.Tests;
+namespace Qapptia.Editor.Tests;
 
 public class SponsorVisualHelperTests
 {

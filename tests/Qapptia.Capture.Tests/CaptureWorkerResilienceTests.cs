@@ -1,13 +1,7 @@
-using System.Threading;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Moq;
-using Qapptia.Capture;
 using Qapptia.Core;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
 using Serilog;
-using Xunit;
 
 namespace Qapptia.Capture.Tests;
 
@@ -45,8 +39,8 @@ public sealed class CaptureWorkerResilienceTests
 
         _trayIconMock.Verify(t => t.RefreshIcon(), Times.Once);
         _trayIconMock.Verify(t => t.ShowNotification(
-            Constants.NotificationTitleCapture,
-            Constants.NotificationMessageCaptureActive,
+            Qapptia.UI.Components.Common.Constants.NotificationTitleCapture,
+            Qapptia.UI.Components.Common.Constants.NotificationMessageCaptureActive,
             TrayNotificationType.Info,
             Constants.NotificationDurationMs), Times.Once);
     }

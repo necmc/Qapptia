@@ -1,11 +1,7 @@
-using System;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using Qapptia.Core.Abstractions;
 using Serilog;
 
@@ -27,7 +23,6 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
         PropertyNameCaseInsensitive = true
     };
     private static readonly Qapptia.Core.Serialization.QapptiaJsonContext Context = new(JsonOptions);
-    private static readonly System.Text.CompositeFormat s_serverUnavailableFormat = System.Text.CompositeFormat.Parse(Constants.UpdateErrorServerUnavailableFormat);
 
     public HttpUpdateCheckService(
         HttpClient? httpClient = null,
@@ -91,7 +86,7 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
             if (!System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable())
             {
                 _logger.Information("Sin conexión de red activa detectada localmente al consultar actualizaciones.");
-                return UpdateCheckResult.NoInternet(_currentVersion, Constants.UpdateErrorNoInternet);
+                return UpdateCheckResult.NoInternet(_currentVersion, UpdateCheckError.NoInternet);
             }
         }
         catch
@@ -109,29 +104,28 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
                 _logger.Warning("El servidor de actualizaciones respondió con código {StatusCode}", response.StatusCode);
-                var errorMsg = string.Format(System.Globalization.CultureInfo.InvariantCulture, s_serverUnavailableFormat, (int)response.StatusCode);
-                return UpdateCheckResult.ServerUnavailable(_currentVersion, errorMsg);
+                return UpdateCheckResult.ServerUnavailable(_currentVersion, UpdateCheckError.ServerUnavailable, (int)response.StatusCode);
             }
 
             var jsonContent = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(jsonContent))
             {
                 _logger.Warning("La respuesta del servidor de actualizaciones está vacía.");
-                return UpdateCheckResult.Invalid(_currentVersion, Constants.UpdateErrorEmptyResponse);
+                return UpdateCheckResult.Invalid(_currentVersion, UpdateCheckError.EmptyResponse);
             }
 
             var releaseDto = JsonSerializer.Deserialize(jsonContent, Context.ReleaseInfoDto);
             if (releaseDto == null || string.IsNullOrWhiteSpace(releaseDto.Version))
             {
                 _logger.Warning("El JSON recibido no contiene un atributo de versión válido.");
-                return UpdateCheckResult.Invalid(_currentVersion, Constants.UpdateErrorMissingVersion);
+                return UpdateCheckResult.Invalid(_currentVersion, UpdateCheckError.MissingVersion);
             }
 
             if (!SemanticVersion.TryParse(_currentVersion, out var localSemver) ||
                 !SemanticVersion.TryParse(releaseDto.Version, out var remoteSemver))
             {
                 _logger.Warning("Fallo al comparar versiones SemVer: Local='{Local}', Remota='{Remote}'", _currentVersion, releaseDto.Version);
-                return UpdateCheckResult.Invalid(_currentVersion, Constants.UpdateErrorInvalidVersionFormat);
+                return UpdateCheckResult.Invalid(_currentVersion, UpdateCheckError.InvalidVersionFormat);
             }
 
             if (remoteSemver > localSemver)
@@ -175,34 +169,34 @@ public sealed class HttpUpdateCheckService : IUpdateCheckService, IDisposable
         catch (TimeoutException ex)
         {
             _logger.Warning(ex, "Tiempo de espera agotado al consultar el servidor de actualizaciones en {Url}.", _endpointUrl);
-            return UpdateCheckResult.ServerUnavailable(_currentVersion, Constants.UpdateErrorTimeout);
+            return UpdateCheckResult.ServerUnavailable(_currentVersion, UpdateCheckError.Timeout);
         }
         catch (OperationCanceledException ex)
         {
             if (!ct.IsCancellationRequested)
             {
                 _logger.Warning(ex, "Tiempo de espera agotado al consultar el servidor de actualizaciones en {Url}.", _endpointUrl);
-                return UpdateCheckResult.ServerUnavailable(_currentVersion, Constants.UpdateErrorTimeout);
+                return UpdateCheckResult.ServerUnavailable(_currentVersion, UpdateCheckError.Timeout);
             }
 
             _logger.Debug("La comprobación de actualización fue cancelada.");
-            return UpdateCheckResult.Failed(_currentVersion, Constants.UpdateErrorCheckCancelled);
+            return UpdateCheckResult.Failed(_currentVersion, UpdateCheckError.CheckCancelled);
         }
         catch (JsonException ex)
         {
             _logger.Warning(ex, "Error al deserializar la respuesta JSON de actualización.");
-            return UpdateCheckResult.Invalid(_currentVersion, Constants.UpdateErrorUnrecognizedResponse);
+            return UpdateCheckResult.Invalid(_currentVersion, UpdateCheckError.UnrecognizedResponse);
         }
         catch (Exception ex)
         {
             if (IsNoInternetException(ex))
             {
                 _logger.Warning(ex, "Sin conexión a Internet al consultar {Url}.", _endpointUrl);
-                return UpdateCheckResult.NoInternet(_currentVersion, Constants.UpdateErrorNoInternet);
+                return UpdateCheckResult.NoInternet(_currentVersion, UpdateCheckError.NoInternet);
             }
 
             _logger.Warning(ex, "Error al verificar actualizaciones en {Url}: {Message}", _endpointUrl, ex.Message);
-            return UpdateCheckResult.ServerUnavailable(_currentVersion, Constants.UpdateErrorConnectionFailed);
+            return UpdateCheckResult.ServerUnavailable(_currentVersion, UpdateCheckError.ConnectionFailed);
         }
     }
 

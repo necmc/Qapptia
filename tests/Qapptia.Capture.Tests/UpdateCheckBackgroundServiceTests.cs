@@ -1,14 +1,7 @@
-using System;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentAssertions;
 using Microsoft.Extensions.Hosting;
-using Moq;
-using Qapptia.Capture;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Services;
-using Xunit;
 
 namespace Qapptia.Capture.Tests;
 
@@ -138,7 +131,7 @@ public sealed class UpdateCheckBackgroundServiceTests : IDisposable
             "OnCheckCompleted",
             BindingFlags.NonPublic | BindingFlags.Instance);
 
-        method?.Invoke(service, new object[] { UpdateCheckResult.ServerUnavailable("2.0.0", "HTTP 503") });
+        method?.Invoke(service, new object[] { UpdateCheckResult.ServerUnavailable("2.0.0", UpdateCheckError.ServerUnavailable, 503) });
 
         // El estado no debe limpiarse ante errores transitorios de red o servidor
         InMemoryUpdateStateStore.HasUpdate.Should().BeTrue();

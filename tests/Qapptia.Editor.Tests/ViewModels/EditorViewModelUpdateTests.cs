@@ -1,14 +1,8 @@
-using System;
-using System.IO;
-using FluentAssertions;
-using Moq;
 using Qapptia.App.Editor.ViewModels;
-using Qapptia.Core;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Services;
 using Qapptia.Editor.Core;
 using Qapptia.Editor.Services;
-using Xunit;
 
 namespace Qapptia.Editor.Tests.ViewModels;
 
@@ -59,8 +53,8 @@ public sealed class EditorViewModelUpdateTests : IDisposable
         using var vm = CreateViewModel();
 
         vm.HasPendingUpdate.Should().BeFalse();
-        vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconInfo);
-        vm.InfoButtonToolTip.Should().Be(Qapptia.Core.Constants.ToolTipAbout);
+        vm.InfoButtonIconKey.Should().Be(Qapptia.UI.Components.Common.Constants.IconInfo);
+        vm.InfoButtonToolTip.Should().Be(Qapptia.UI.Components.Common.Constants.ToolTipAbout);
     }
 
     [Fact]
@@ -73,7 +67,7 @@ public sealed class EditorViewModelUpdateTests : IDisposable
         vm.HasPendingUpdate.Should().BeTrue();
         vm.PendingUpdateVersion.Should().Be("2.0.0");
         vm.PendingUpdateUrl.Should().Be("https://example.com/download");
-        vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconDownload);
+        vm.InfoButtonIconKey.Should().Be(Qapptia.UI.Components.Common.Constants.IconDownload);
         vm.InfoButtonToolTip.Should().Contain("2.0.0");
     }
 
@@ -88,8 +82,8 @@ public sealed class EditorViewModelUpdateTests : IDisposable
         vm.ClearPendingUpdate();
 
         vm.HasPendingUpdate.Should().BeFalse();
-        vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconInfo);
-        vm.InfoButtonToolTip.Should().Be(Qapptia.Core.Constants.ToolTipAbout);
+        vm.InfoButtonIconKey.Should().Be(Qapptia.UI.Components.Common.Constants.IconInfo);
+        vm.InfoButtonToolTip.Should().Be(Qapptia.UI.Components.Common.Constants.ToolTipAbout);
     }
 
     [Fact]
@@ -143,7 +137,7 @@ public sealed class EditorViewModelUpdateTests : IDisposable
             completed.Should().Be(tcs.Task);
 
             vm.HasPendingUpdate.Should().BeTrue();
-            vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconDownload);
+            vm.InfoButtonIconKey.Should().Be(Qapptia.UI.Components.Common.Constants.IconDownload);
             vm.PendingUpdateVersion.Should().Be("99.0.0");
         }
         finally
@@ -158,14 +152,14 @@ public sealed class EditorViewModelUpdateTests : IDisposable
         using var vm = CreateViewModel();
         vm.SetPendingUpdate("2.0.0", "https://example.com/download");
         vm.HasPendingUpdate.Should().BeTrue();
-        vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconDownload);
+        vm.InfoButtonIconKey.Should().Be(Qapptia.UI.Components.Common.Constants.IconDownload);
 
         // Al limpiar el estado en memoria (por fallo de comprobación o estar al día), el VM reacciona
         InMemoryUpdateStateStore.Clear();
 
         vm.HasPendingUpdate.Should().BeFalse();
-        vm.InfoButtonIconKey.Should().Be(Qapptia.Core.Constants.IconInfo);
-        vm.InfoButtonToolTip.Should().Be(Qapptia.Core.Constants.ToolTipAbout);
+        vm.InfoButtonIconKey.Should().Be(Qapptia.UI.Components.Common.Constants.IconInfo);
+        vm.InfoButtonToolTip.Should().Be(Qapptia.UI.Components.Common.Constants.ToolTipAbout);
     }
 
     [Fact]
@@ -175,7 +169,7 @@ public sealed class EditorViewModelUpdateTests : IDisposable
 
         var updateServiceMock = new Mock<IUpdateCheckService>();
         updateServiceMock.Setup(s => s.CheckForUpdatesAsync(It.IsAny<bool>(), It.IsAny<System.Threading.CancellationToken>()))
-            .ReturnsAsync(UpdateCheckResult.ServerUnavailable("2.0.0", "Timeout"));
+            .ReturnsAsync(UpdateCheckResult.ServerUnavailable("2.0.0", UpdateCheckError.Timeout));
 
         using var vm = new EditorViewModel(
             _stateServiceMock.Object,
@@ -188,7 +182,7 @@ public sealed class EditorViewModelUpdateTests : IDisposable
 
         // Disparamos un chequeo fallido en el coordinador
         var method = typeof(EditorViewModel).GetMethod("OnCoordinatorCheckCompleted", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        method?.Invoke(vm, new object[] { UpdateCheckResult.ServerUnavailable("2.0.0", "Timeout") });
+        method?.Invoke(vm, new object[] { UpdateCheckResult.ServerUnavailable("2.0.0", UpdateCheckError.Timeout) });
 
         // La alerta debe seguir activa; no se debe haber desalertado al usuario
         vm.HasPendingUpdate.Should().BeTrue();

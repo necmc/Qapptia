@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using SkiaSharp;
 
 namespace Qapptia.Core;
@@ -8,14 +6,6 @@ public static class Constants
 {
     public const string AppName = "Qapptia";
     public const string AppVersion = "2.0.0-beta";
-    public const string AppDescription = "Herramienta de captura de pantalla, recortes y anotaciones. Mantiene un enfoque en la agilidad para documentar evidencias en el proceso de pruebas de software (QA) y practicidad para propósitos generales.";
-    public const string AboutSupportHeader = "Apoyar el proyecto";
-    public const string AboutSupportDescription = "Este es un proyecto libre e independiente. Tu apoyo impulsa la creación de nuevas características y su desarrollo continuo.";
-    public const string AboutUpdatesHeader = "Actualizaciones de software";
-    public const string AboutHelpHeader = "Guía del Editor";
-    public const string AboutHelpDescription = "Accede a la guía visual y manual rápido de herramientas, funciones del Capturador y opciones del Editor.";
-    public const string AboutHelpButtonText = "Ver guía del Editor";
-    public const string AboutHelpToolTip = "Abrir la guía de uso del Editor (F1)";
     public const string ConfigFileName = "config.json";
     public const string EditorStateFileName = "editor_state.json";
     public const string ShortcutCopyClipboard = "Ctrl+C";
@@ -48,6 +38,10 @@ public static class Constants
     public const string SubfolderMonthFormat = "yyyy-MM";
     public const string SubfolderDayFormat = "yyyy-MM-dd";
     public const string SubfolderHourFormat = "HH'h'";
+
+    // Atajos predeterminados de captura
+    public const string DefaultShortcutScreen = "ctrl+shift+q";
+    public const string DefaultShortcutArea = "ctrl+shift+a";
 
     // Formato por defecto para nombres de archivo de captura
     public const string DefaultFilenameFormat = "Qapptia_YYYYMMDD_HHmmSS";
@@ -112,59 +106,16 @@ public static class Constants
     public static readonly int[] UpdateTimingNoInternetBackoffHours = [1, 2, 4, 8];
     public static readonly TimeSpan UpdateTimingNoInternetMaxJitter = TimeSpan.FromMinutes(5);
 
-    // Claves de iconos del sistema
-    public const string IconInfo = "IconInfo";
-    public const string IconDownload = "IconDownload";
-
-    // Textos de apoyo y contribución compartidos (numerados para estabilidad ante cambios de textos)
-    public const string SponsorText1 = "Invítame un café";
-    public const string SponsorText2 = "Apoyar proyecto";
-    public const string SponsorText3 = "Contribuir";
-    public const string SponsorText4 = "Impulsar desarrollo";
-    public const string SponsorDefaultActionTitle = "Apoyar";
-
-    // Claves de iconos vectoriales de apoyo (numeradas para estabilidad)
-    public const string SponsorIcon1 = "IconSponsorCoffeeHeart";
-    public const string SponsorIcon2 = "IconSponsorRamenHeart";
-    public const string SponsorIcon3 = "IconSponsorCoffeeCup";
-    public const string SponsorIcon4 = "IconSponsorHeartBadge";
-
-    // Identificadores del set de estilos de apoyo (definidos en MaterialTheme.axaml)
-    public const string SponsorStyleA = "SponsorStyleA";
-    public const string SponsorStyleB = "SponsorStyleB";
-    public const string SponsorStyleC = "SponsorStyleC";
-    public const string SponsorStyleD = "SponsorStyleD";
-
     // Notificaciones del sistema
     public const int NotificationDurationMs = 5000;
-    public const string NotificationTitleCapture = CaptureAppName;
-    public const string NotificationTitleEditor = EditorAppName;
-    public const string NotificationTitleConfig = ConfigAppName;
-    public const string NotificationMessageCaptureStarted = "El capturador está activo en segundo plano.";
-    public const string NotificationMessageCaptureRestarted = "El capturador se ha reiniciado correctamente.";
-    public const string NotificationMessageCaptureActive = "El capturador ya se encuentra activo en la bandeja del sistema.";
-    public const string NotificationTitleUpdateAvailable = "Actualización disponible";
-    public const string NotificationMessageUpdateAvailableFormat = "Qapptia v{0} está disponible para descargar.";
 
     // Nombres de recursos y carpetas de assets
     public const string AssetsDirectoryName = "Assets";
     public const string TrayIconFileName = "tray_icon.ico";
     public const string AppIconFileName = "app_icon.ico";
 
-    // Textos y configuraciones de actualización
-    public const string ToolTipAbout = "Acerca de Qapptia";
-    public const string ToolTipUpdateAvailableFormat = "Nueva versión v{0} disponible. Haz clic para descargar";
-    public const string TrayMenuDownloadUpdateFormat = "🚀 Descargar actualización (v{0})";
+    // Intervalo entre descargas solicitadas por el usuario
     public const int UpdateDownloadCooldownMs = 2000;
-    public const string UpdateErrorServerUnavailableFormat = "Servidor no disponible ({0}).";
-    public const string UpdateErrorEmptyResponse = "El servidor no devolvió información.";
-    public const string UpdateErrorMissingVersion = "La respuesta del servidor no contiene información de versión válida.";
-    public const string UpdateErrorInvalidVersionFormat = "El formato de la versión recibida no es válido.";
-    public const string UpdateErrorCheckCancelled = "Comprobación cancelada.";
-    public const string UpdateErrorTimeout = "El servidor no responde, tiempo de espera agotado.";
-    public const string UpdateErrorUnrecognizedResponse = "No se pudo interpretar la respuesta del servidor.";
-    public const string UpdateErrorConnectionFailed = "No se pudo conectar con el servidor.";
-    public const string UpdateErrorNoInternet = "Sin conexión a Internet.";
 
 #if DEBUG
     public static string DefaultConfigPath => Path.Combine(AppContext.BaseDirectory, ConfigFileName);

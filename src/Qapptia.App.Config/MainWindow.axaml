@@ -4,6 +4,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:Qapptia.App.Config.ViewModels"
         xmlns:controls="using:Qapptia.App.Config.Controls"
+        xmlns:config="clr-namespace:Qapptia.App.Config.Common"
         xmlns:core="using:Qapptia.Core"
         mc:Ignorable="d" d:DesignWidth="580" d:DesignHeight="530"
         Width="580" Height="530"
@@ -27,22 +28,25 @@
     </Window.Styles>
 
     <Grid RowDefinitions="*,Auto">
-        
+
         <!-- Tabs -->
         <TabControl Grid.Row="0" Margin="16,12,16,8" SelectedIndex="{Binding SelectedTabIndex}">
-            
+
             <!-- Pestaña General -->
             <TabItem Header="General" Content="{Binding}">
                 <TabItem.ContentTemplate>
                     <DataTemplate x:DataType="vm:ConfigViewModel">
                         <StackPanel Spacing="16" Margin="16">
-                            
+
                             <!-- Inicio del sistema -->
                             <HeaderedContentControl Header="Inicio del sistema">
-                                <CheckBox Content="Iniciar automáticamente al encender el equipo"
-                                          IsChecked="{Binding AutoStart}"
-                                          IsEnabled="{Binding IsAutoStartSupported}"
-                                          Margin="0,4,0,0" />
+                                <StackPanel Spacing="4">
+                                    <CheckBox Content="Iniciar automáticamente al encender el equipo"
+                                              IsChecked="{Binding AutoStart}"
+                                              IsEnabled="{Binding CanEditAutoStart}"
+                                              Margin="0,4,0,0" />
+                                    <TextBlock Text="{Binding AutoStartStatusMessage}" TextWrapping="Wrap" FontSize="12" Opacity="0.75" />
+                                </StackPanel>
                             </HeaderedContentControl>
 
                             <!-- Apariencia / Tema M3 -->
@@ -60,7 +64,7 @@
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Guardar en:" VerticalAlignment="Center" Margin="0,0,8,0" />
                                     <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding SavePath}" Margin="0,0,8,0" IsReadOnly="True" />
                                     <Button Grid.Row="0" Grid.Column="2" Content="Examinar..." Command="{Binding BrowsePathCommand}" Classes="outline-button" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-                                    
+
                                     <!-- Formato de archivo -->
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Formato archivo:" VerticalAlignment="Center" Margin="0,12,8,0" />
                                     <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding FilenameFormat}" Margin="0,12,8,0" PlaceholderText="Ej. Captura_YYYYMMDD_HHmmSS" />
@@ -87,13 +91,13 @@
                     </DataTemplate>
                 </TabItem.ContentTemplate>
             </TabItem>
-            
+
             <!-- Pestaña Captura -->
             <TabItem Header="Captura" Content="{Binding}">
                 <TabItem.ContentTemplate>
                     <DataTemplate x:DataType="vm:ConfigViewModel">
                         <StackPanel Spacing="16" Margin="16">
-                                
+
                             <!-- Cursor -->
                             <HeaderedContentControl Header="Cursor">
                                 <StackPanel Orientation="Horizontal" Spacing="24" Margin="0,4,0,0">
@@ -107,7 +111,7 @@
                                 <Grid ColumnDefinitions="90,*,110,*" RowDefinitions="Auto,Auto,Auto" Margin="0,4,0,0">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Atajo:" VerticalAlignment="Center" Margin="0,0,8,4" />
                                     <controls:ShortcutTextBox Grid.Row="0" Grid.Column="1" Text="{Binding ShortcutScreen}" Margin="0,0,16,4" />
-                                    
+
                                     <TextBlock Grid.Row="0" Grid.Column="2" Text="Temporizador:" VerticalAlignment="Center" Margin="0,0,8,4" />
                                     <NumericUpDown Grid.Row="0" Grid.Column="3" Value="{Binding ManualTimer}" Minimum="0" Maximum="999" Increment="1" Margin="0,0,0,4" HorizontalAlignment="Stretch" />
 
@@ -121,7 +125,7 @@
                                 <Grid ColumnDefinitions="90,*,110,*" RowDefinitions="Auto,Auto" Margin="0,4,0,0">
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Atajo:" VerticalAlignment="Center" Margin="0,0,8,4" />
                                     <controls:ShortcutTextBox Grid.Row="0" Grid.Column="1" Text="{Binding ShortcutArea}" Margin="0,0,16,4" />
-                                    
+
                                     <CheckBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="4" Content="Copiar al portapapeles automáticamente" IsChecked="{Binding CopyToClipboardArea}" Margin="0,4,0,0" />
                                 </Grid>
                             </HeaderedContentControl>
@@ -137,14 +141,14 @@
                     <DataTemplate x:DataType="vm:ConfigViewModel">
                         <StackPanel Spacing="16" Margin="16">
                             <!-- Sección Guía del Editor -->
-                            <HeaderedContentControl Header="{x:Static core:Constants.AboutHelpHeader}">
+                            <HeaderedContentControl Header="{x:Static config:Constants.AboutHelpHeader}">
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                                    <TextBlock Grid.Column="0" 
-                                               Text="{x:Static core:Constants.AboutHelpDescription}" 
+                                    <TextBlock Grid.Column="0"
+                                               Text="{x:Static config:Constants.AboutHelpDescription}"
                                                FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
-                                    <Button Grid.Column="1" 
+                                    <Button Grid.Column="1"
                                             Command="{Binding OpenEditorHelpCommand}"
-                                            ToolTip.Tip="{x:Static core:Constants.AboutHelpToolTip}"
+                                            ToolTip.Tip="{x:Static config:Constants.AboutHelpToolTip}"
                                             MinWidth="210"
                                             Padding="14,0"
                                             Height="36"
@@ -154,7 +158,7 @@
                                             Classes="outline-button">
                                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <PathIcon Data="{StaticResource IconHelp}" Width="16" Height="16" VerticalAlignment="Center" />
-                                            <TextBlock Text="{x:Static core:Constants.AboutHelpButtonText}" FontSize="14" VerticalAlignment="Center" />
+                                            <TextBlock Text="{x:Static config:Constants.AboutHelpButtonText}" FontSize="14" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
                                 </Grid>
@@ -169,11 +173,11 @@
                 <TabItem.ContentTemplate>
                     <DataTemplate x:DataType="vm:ConfigViewModel">
                         <StackPanel Spacing="16" Margin="16">
-                                
+
                                 <!-- Banner Superior: Nombre y Versión -->
                                 <Border Background="{DynamicResource M3SurfaceVariantBrush}" CornerRadius="8" Padding="14">
                                     <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
-                                        <Image Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" 
+                                        <Image Grid.Row="0" Grid.RowSpan="2" Grid.Column="0"
                                                Source="avares://QapptiaConfig/Assets/app_icon.ico"
                                                Width="64" Height="64" Margin="0,0,16,0" VerticalAlignment="Center"
                                                RenderOptions.BitmapInterpolationMode="HighQuality" />
@@ -183,19 +187,19 @@
                                                 <TextBlock Text="{Binding Source={x:Static core:Constants.AppVersion}, StringFormat='v{0}'}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource M3OnPrimaryBrush}" />
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Grid.Row="1" Grid.Column="1" 
-                                                   Text="{x:Static core:Constants.AppDescription}" 
+                                        <TextBlock Grid.Row="1" Grid.Column="1"
+                                                   Text="{x:Static config:Constants.AppDescription}"
                                                    FontSize="12" Foreground="{DynamicResource M3OnSurfaceVariantBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
                                     </Grid>
                                 </Border>
 
                                 <!-- Sección Apoyo / Colaboración (Random Icon + Random Text) -->
-                                <HeaderedContentControl Header="{x:Static core:Constants.AboutSupportHeader}">
+                                <HeaderedContentControl Header="{x:Static config:Constants.AboutSupportHeader}">
                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                                        <TextBlock Grid.Column="0" 
-                                                   Text="{x:Static core:Constants.AboutSupportDescription}" 
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{x:Static config:Constants.AboutSupportDescription}"
                                                    FontSize="12" Foreground="{DynamicResource M3OnSurfaceBrush}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" />
-                                        <Button Grid.Column="1" 
+                                        <Button Grid.Column="1"
                                                 Command="{Binding SponsorCommand}"
                                                 IsEnabled="{Binding CanSponsor}"
                                                 ToolTip.Tip="{Binding SponsorText}"
@@ -218,22 +222,22 @@
                                 </HeaderedContentControl>
 
                                 <!-- Sección Comprobación y Actualización -->
-                                <HeaderedContentControl Header="{x:Static core:Constants.AboutUpdatesHeader}">
+                                <HeaderedContentControl Header="{x:Static config:Constants.AboutUpdatesHeader}">
                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                         <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center" Margin="0,0,16,0">
-                                            <TextBlock Text="{Binding UpdateStatusMessage}" 
-                                                       FontSize="12" 
-                                                       Foreground="{DynamicResource M3OnSurfaceBrush}" 
+                                            <TextBlock Text="{Binding UpdateStatusMessage}"
+                                                       FontSize="12"
+                                                       Foreground="{DynamicResource M3OnSurfaceBrush}"
                                                        TextWrapping="Wrap" />
-                                            <ProgressBar IsIndeterminate="True" 
-                                                         Height="4" 
-                                                         IsVisible="{Binding IsCheckingUpdate}" 
+                                            <ProgressBar IsIndeterminate="True"
+                                                         Height="4"
+                                                         IsVisible="{Binding IsCheckingUpdate}"
                                                          HorizontalAlignment="Stretch" />
                                         </StackPanel>
 
-                                        <Button Grid.Column="1" 
-                                                Command="{Binding UpdateActionCommand}" 
-                                                IsEnabled="{Binding CanExecuteUpdateAction}" 
+                                        <Button Grid.Column="1"
+                                                Command="{Binding UpdateActionCommand}"
+                                                IsEnabled="{Binding CanExecuteUpdateAction}"
                                                 ToolTip.Tip="{Binding UpdateButtonText}"
                                                 MinWidth="210"
                                                 Padding="14,0"
@@ -260,37 +264,37 @@
         </TabControl>
 
         <!-- Barra inferior de acciones (Footer) -->
-        <Border Grid.Row="1" 
-                Background="{DynamicResource M3SurfaceContainerLowBrush}" 
-                BorderBrush="{DynamicResource M3OutlineVariantBrush}" 
-                BorderThickness="0,1,0,0" 
+        <Border Grid.Row="1"
+                Background="{DynamicResource M3SurfaceContainerLowBrush}"
+                BorderBrush="{DynamicResource M3OutlineVariantBrush}"
+                BorderThickness="0,1,0,0"
                 Padding="16,12">
             <Grid ColumnDefinitions="*,Auto,Auto">
-                <TextBlock Grid.Column="0" 
-                           Text="{Binding FooterMessage}" 
-                           VerticalAlignment="Center" 
-                           TextWrapping="Wrap" 
-                           Classes="footerMessage" 
-                           Classes.error="{Binding IsFooterError}" 
+                <TextBlock Grid.Column="0"
+                           Text="{Binding FooterMessage}"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Classes="footerMessage"
+                           Classes.error="{Binding IsFooterError}"
                            Margin="0,0,12,0" />
-                <Button Grid.Column="1" 
-                        Content="Guardar" 
-                        Command="{Binding SaveCommand}" 
-                        MinWidth="90" 
-                        Height="32" 
-                        HorizontalContentAlignment="Center" 
-                        Classes="accent" 
+                <Button Grid.Column="1"
+                        Content="Guardar"
+                        Command="{Binding SaveCommand}"
+                        MinWidth="90"
+                        Height="32"
+                        HorizontalContentAlignment="Center"
+                        Classes="accent"
                         Margin="0,0,8,0" />
-                <Button Grid.Column="2" 
-                        Content="Cerrar" 
-                        Command="{Binding CloseCommand}" 
+                <Button Grid.Column="2"
+                        Content="Cerrar"
+                        Command="{Binding CloseCommand}"
                         IsCancel="True"
-                        MinWidth="90" 
-                        Height="32" 
+                        MinWidth="90"
+                        Height="32"
                         Classes="outline-button"
                         HorizontalContentAlignment="Center" />
             </Grid>
         </Border>
-        
+
     </Grid>
 </Window>

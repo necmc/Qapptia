@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Qapptia.Editor\Qapptia.Editor.csproj" />
     <ProjectReference Include="..\..\src\Qapptia.App.Editor\Qapptia.App.Editor.csproj" />
+    <ProjectReference Include="..\..\src\Qapptia.App.Config\Qapptia.App.Config.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
