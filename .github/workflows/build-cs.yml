@@ -1,38 +1,159 @@
-name: Build and Test (C#)
+name: Build, Test and Release (C#)
 
 on:
+  # Cada ejecución manual genera su propio release en borrador.
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
 
 permissions:
   contents: read
-  checks: write
 
 jobs:
-  build:
-    name: Build & Test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+  # Directory.Build.props define la versión; en lanzamientos por tag debe coincidir.
+  version:
+    name: Validate release version
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Resolve version and validate automatic release
+        id: version
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          RELEASE_EVENT: ${{ github.event_name }}
+        run: |
+          $metadata = dotnet msbuild src/Qapptia.Core/Qapptia.Core.csproj -nologo -getProperty:Version,VersionSuffix
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to read the project version.' }
+          $properties = ($metadata | ConvertFrom-Json).Properties
+          if ($env:RELEASE_EVENT -eq 'push' -and $env:RELEASE_TAG -cne "v$($properties.Version)") {
+            throw "Tag '$env:RELEASE_TAG' does not match Directory.Build.props: v$($properties.Version)."
+          }
+          "version=$($properties.Version)" >> $env:GITHUB_OUTPUT
+          "prerelease=$((-not [string]::IsNullOrEmpty($properties.VersionSuffix)).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
-    runs-on: ${{ matrix.os }}
+  build:
+    name: Build, Test and Package (Windows)
+    needs: version
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore (Central Package Management)
-        run: dotnet restore Qapptia.sln
+      # El script ya compila y prueba; PackageAll genera los tres formatos.
+      # Inno Setup se obtiene del entorno preinstalado de GitHub.
+      - name: Build, test and package Windows
+        shell: pwsh
+        run: ./build.ps1 -PackageAll
 
-      - name: Build
-        run: dotnet build Qapptia.sln --configuration Release --no-restore
+      # Acredita el origen de los paquetes; no firma los ejecutables ante Windows.
+      - name: Attest Windows packages
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-*
 
-      - name: Test
-        run: dotnet test Qapptia.sln --configuration Release --no-build --verbosity normal
+      # Cada paquete se sube como archivo independiente, sin otro ZIP contenedor.
+      - name: Store Windows portable light
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          if-no-files-found: error
+          path: dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-portable-light.zip
+
+      - name: Store Windows portable
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          if-no-files-found: error
+          path: dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-portable.zip
+
+      - name: Store Windows installer
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          if-no-files-found: error
+          path: dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-setup.exe
+
+  release:
+    name: Create release
+    # Solo publica cuando todas las verificaciones y el empaquetado finalizan correctamente.
+    needs: [version, build]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      DRAFT_TAG: workflow-test-${{ github.run_id }}-${{ github.run_attempt }}
+      # Descripción compartida; GitHub añade las notas automáticas al final.
+      RELEASE_DESCRIPTION: |
+        ## Windows (64-bit)
+
+        1. **Installer — `*-setup.exe`:** installs for the current user or all users.
+        2. **Self-contained portable — `*-portable.zip`:** includes the .NET runtime; no installation required.
+        3. **Lightweight portable — `*-portable-light.zip`:** requires the .NET runtime; no installation required.
+
+        Download each package separately from **Assets**.
+      RELEASE_FILES: |
+        dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-portable-light.zip
+        dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-portable.zip
+        dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-setup.exe
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: Qapptia-v${{ needs.version.outputs.version }}-win-x64-*
+          path: dist
+          merge-multiple: true
+          # Conserva los ZIP portables originales para adjuntarlos al release.
+          skip-decompress: true
+      - name: Create test draft
+        id: draft
+        if: github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ env.DRAFT_TAG }}
+          target_commitish: ${{ github.sha }}
+          name: Workflow test ${{ github.run_id }}-${{ github.run_attempt }}
+          draft: true
+          make_latest: 'false'
+          prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+          body: ${{ env.RELEASE_DESCRIPTION }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: ${{ env.RELEASE_FILES }}
+
+      - name: Show test draft
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          DRAFT_URL: ${{ steps.draft.outputs.url }}
+        run: '"Test draft: $env:DRAFT_URL" >> $env:GITHUB_STEP_SUMMARY'
+
+      - name: Publish automatic release
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+          # Las versiones preliminares no sustituyen a la última estable.
+          make_latest: ${{ needs.version.outputs.prerelease == 'true' && 'false' || 'legacy' }}
+          body: ${{ env.RELEASE_DESCRIPTION }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: ${{ env.RELEASE_FILES }}

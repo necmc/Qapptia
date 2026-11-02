@@ -8,7 +8,7 @@
 #define AutoStartRunSubKey "Software\Microsoft\Windows\CurrentVersion\Run"
 #define AutoStartArguments "--capture"
 #ifndef AppVersion
-  #define AppVersion "1.0.0"
+  #error AppVersion debe proporcionarse desde Directory.Build.props mediante build.ps1.
 #endif
 #ifndef SourceDir
   #define SourceDir "dist\Qapptia"

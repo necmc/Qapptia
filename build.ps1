@@ -56,7 +56,7 @@ $ErrorActionPreference = "Stop"
 $rootDir = $PSScriptRoot
 $distDir = Join-Path $rootDir "dist"
 $distAppDir = Join-Path $distDir "Qapptia"
-$distSubAppDir = Join-Path $distAppDir "app"
+$distLightAppDir = Join-Path $distDir "Qapptia-light"
 $generatedPackages = @()
 
 function Stop-ExistingQapptiaProcesses {
@@ -243,17 +243,17 @@ function Find-InnoSetupCompiler {
 function Publish-AppFiles {
     param (
         [bool]$SelfContained,
-        [string]$VariantName
+        [string]$VariantName,
+        [string]$DestinationDir
     )
 
     Write-Host "`n--- Publicando binarios: $VariantName ---" -ForegroundColor Yellow
+    $subAppDir = Join-Path $DestinationDir "app"
 
     Stop-ExistingQapptiaProcesses
     Start-Sleep -Milliseconds 100
 
-    if (Test-Path $distAppDir) {
-        Remove-Item -Recurse -Force $distAppDir
-    }
+    Remove-BuildArtifact -Path $DestinationDir
 
     $subProjects = @(
         "src/Qapptia.App.Capture/Qapptia.App.Capture.csproj",
@@ -266,7 +266,7 @@ function Publish-AppFiles {
             -c $Configuration -r $Runtime `
             --self-contained $SelfContained `
             -p:DebugType=none `
-            -o $distSubAppDir
+            -o $subAppDir
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error al publicar $proj ($VariantName)."
             exit $LASTEXITCODE
@@ -275,7 +275,7 @@ function Publish-AppFiles {
 
     # El apphost raíz carga el Launcher y las dependencias compartidas desde app.
     $launcherName = if ($Runtime -like "win*") { "Qapptia.exe" } else { "Qapptia" }
-    $launcherHostPath = Join-Path $distAppDir $launcherName
+    $launcherHostPath = Join-Path $DestinationDir $launcherName
     & dotnet publish (Join-Path $rootDir "src/Qapptia.Launcher/Qapptia.Launcher.csproj") `
         -c $Configuration -r $Runtime `
         --self-contained $SelfContained `
@@ -283,16 +283,16 @@ function Publish-AppFiles {
         -p:PublishTrimmed=false `
         -p:DebugType=none `
         "-p:SuiteLauncherHostPath=$launcherHostPath" `
-        -o $distSubAppDir
+        -o $subAppDir
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Error al publicar Qapptia.Launcher ($VariantName)."
         exit $LASTEXITCODE
     }
 
-    Remove-BuildArtifact -Path (Join-Path $distSubAppDir $launcherName)
+    Remove-BuildArtifact -Path (Join-Path $subAppDir $launcherName)
 
     # Depuración de símbolos PDB y ensamblados ajenos al sistema operativo de destino
-    Get-ChildItem -Path $distAppDir -Filter "*.pdb" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+    Get-ChildItem -Path $DestinationDir -Filter "*.pdb" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
     if ($Runtime -like "win*") {
         $prunePatterns = @(
             "Avalonia.X11*.dll",
@@ -304,7 +304,7 @@ function Publish-AppFiles {
             "mscordbi.dll"
         )
         foreach ($pattern in $prunePatterns) {
-            Get-ChildItem -Path $distSubAppDir -Filter $pattern -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
+            Get-ChildItem -Path $subAppDir -Filter $pattern -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force
         }
     }
 }
@@ -312,12 +312,13 @@ function Publish-AppFiles {
 function Build-PackageZip {
     param (
         [string]$VariantName,
-        [string]$VariantSuffix
+        [string]$VariantSuffix,
+        [string]$SourceDir
     )
 
     $zipFileName = "Qapptia-v$appVersion-$Runtime-$VariantSuffix.zip"
     $zipFilePath = Join-Path $distDir $zipFileName
-    Compress-Archive -Path (Join-Path $distAppDir "*") -DestinationPath $zipFilePath -Force
+    Compress-Archive -Path (Join-Path $SourceDir "*") -DestinationPath $zipFilePath -Force
 
     $zipItem = Get-Item $zipFilePath
     $zipSizeMb = [math]::Round($zipItem.Length / 1MB, 2)
@@ -355,7 +356,7 @@ function Build-InstallerPackage {
     # Intentar eliminar el instalador previo asegurando que ningún descriptor quede retenido
     Remove-BuildArtifact -Path $setupFilePath -MaxAttempts 3 -RetryDelayMs 400
 
-    Write-Host "Compilando instalador con ISCC..." -ForegroundColor DarkGray
+    Write-Host "Compilando instalador con ISCC: $iscc" -ForegroundColor DarkGray
 
     # Compilación en directorio temporal aislado para evitar retención de descriptores PE
     $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd([System.IO.Path]::DirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
@@ -413,23 +414,25 @@ if ($isPackaging) {
         New-Item -ItemType Directory -Path $distDir | Out-Null
     }
 
-    # Paquete dependiente del Framework (portable-light)
+    # Todas las publicaciones terminan antes de generar los paquetes.
+    # Publicación dependiente del Framework (portable-light)
     if ($buildFramework) {
-        Publish-AppFiles -SelfContained $false -VariantName "Framework-Dependent"
-        $generatedPackages += Build-PackageZip -VariantName "Framework-Dependent" -VariantSuffix "portable-light"
+        Publish-AppFiles -SelfContained $false -VariantName "Framework-Dependent" -DestinationDir $distLightAppDir
     }
 
     # Publicación autocontenida (necesaria para portable y/o instalador)
     if ($buildSelfContained) {
-        Publish-AppFiles -SelfContained $true -VariantName "Self-Contained"
+        Publish-AppFiles -SelfContained $true -VariantName "Self-Contained" -DestinationDir $distAppDir
+    }
 
-        if ($buildZipSelfContained) {
-            $generatedPackages += Build-PackageZip -VariantName "Self-Contained" -VariantSuffix "portable"
-        }
-
-        if ($buildInstaller) {
-            $generatedPackages += Build-InstallerPackage -SourceDir $distAppDir
-        }
+    if ($buildFramework) {
+        $generatedPackages += Build-PackageZip -VariantName "Framework-Dependent" -VariantSuffix "portable-light" -SourceDir $distLightAppDir
+    }
+    if ($buildZipSelfContained) {
+        $generatedPackages += Build-PackageZip -VariantName "Self-Contained" -VariantSuffix "portable" -SourceDir $distAppDir
+    }
+    if ($buildInstaller) {
+        $generatedPackages += Build-InstallerPackage -SourceDir $distAppDir
     }
 
     Write-Host "`nPaquetes generados:" -ForegroundColor Green
@@ -443,7 +446,8 @@ if ($Run) {
     Write-Host "`n[Run] Iniciando aplicación..." -ForegroundColor Cyan
     Stop-ExistingQapptiaProcesses
     if ($isPackaging) {
-        $exeToRun = Join-Path $distAppDir "Qapptia.exe"
+        $runAppDir = if ($buildSelfContained) { $distAppDir } else { $distLightAppDir }
+        $exeToRun = Join-Path $runAppDir "Qapptia.exe"
     } else {
         $localExeRoot = Join-Path $rootDir "bin/$Configuration/Qapptia.exe"
         $localExeWin = Join-Path $rootDir "bin/$Configuration/win-x64/Qapptia.exe"

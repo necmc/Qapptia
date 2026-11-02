@@ -1,3 +1,4 @@
+using System.Reflection;
 using SkiaSharp;
 
 namespace Qapptia.Core;
@@ -5,7 +6,8 @@ namespace Qapptia.Core;
 public static class Constants
 {
     public const string AppName = "Qapptia";
-    public const string AppVersion = "2.0.0-beta";
+    public static string AppVersion { get; } = typeof(Constants).Assembly
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
     public const string ConfigFileName = "config.json";
     public const string EditorStateFileName = "editor_state.json";
     public const string ShortcutCopyClipboard = "Ctrl+C";
