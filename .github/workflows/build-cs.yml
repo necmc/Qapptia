@@ -57,19 +57,19 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      # El script ya compila y prueba; PackageAll genera los tres formatos.
+      # PackageAll compila, ejecuta las pruebas y genera los tres paquetes de Windows.
       # Inno Setup se obtiene del entorno preinstalado de GitHub.
       - name: Build, test and package Windows
         shell: pwsh
         run: ./build.ps1 -PackageAll
 
-      # Acredita el origen de los paquetes; no firma los ejecutables ante Windows.
+      # Vincula los hashes de los paquetes con el repositorio, el commit y el workflow.
       - name: Attest Windows packages
         uses: actions/attest@v4
         with:
           subject-path: dist/Qapptia-v${{ needs.version.outputs.version }}-win-x64-*
 
-      # Cada paquete se sube como archivo independiente, sin otro ZIP contenedor.
+      # Cada paquete se almacena como un artefacto independiente.
       - name: Store Windows portable light
         uses: actions/upload-artifact@v7
         with:
@@ -93,13 +93,16 @@ jobs:
 
   release:
     name: Create release
-    # Solo publica cuando todas las verificaciones y el empaquetado finalizan correctamente.
+    # El release depende de la validación de versión y del empaquetado.
     needs: [version, build]
     runs-on: windows-latest
     permissions:
       contents: write
     env:
       DRAFT_TAG: workflow-test-${{ github.run_id }}-${{ github.run_attempt }}
+      # Enlaces públicos incluidos en los manifiestos de actualización.
+      RELEASE_DOWNLOAD_URL: https://qapptia.com/download
+      RELEASE_SPONSOR_URL: https://qapptia.com/sponsor
       # Descripción compartida; GitHub añade las notas automáticas al final.
       RELEASE_DESCRIPTION: |
         ## Windows (64-bit)
@@ -145,6 +148,7 @@ jobs:
         run: '"Test draft: $env:DRAFT_URL" >> $env:GITHUB_STEP_SUMMARY'
 
       - name: Publish automatic release
+        id: published
         if: github.event_name == 'push' && github.ref_type == 'tag'
         uses: softprops/action-gh-release@v3
         with:
@@ -157,3 +161,112 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: ${{ env.RELEASE_FILES }}
+
+      # latest.json y el JSON de versión contienen el mismo manifiesto.
+      - name: Generate release JSON files
+        uses: actions/github-script@v8
+        env:
+          RELEASE_ID: ${{ steps.draft.outputs.id || steps.published.outputs.id }}
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        with:
+          script: |
+            const fs = require('node:fs/promises');
+            const path = require('node:path');
+            const { createHash } = require('node:crypto');
+            const version = process.env.RELEASE_VERSION;
+            const tag = `v${version}`;
+            const { data: release } = await github.rest.repos.getRelease({
+              ...context.repo, release_id: Number(process.env.RELEASE_ID)
+            });
+            if (!release.draft && (release.tag_name !== tag || !release.published_at)) {
+              throw new Error('Published release metadata does not match the project version.');
+            }
+            const variants = {};
+            for (const [variant, suffix] of Object.entries({
+              installer: 'setup.exe', portable: 'portable.zip', portableLight: 'portable-light.zip'
+            })) {
+              const filename = `Qapptia-${tag}-win-x64-${suffix}`;
+              const asset = release.assets.find(item => item.name === filename);
+              if (!asset || asset.state !== 'uploaded' || !asset.browser_download_url) {
+                throw new Error(`Missing uploaded release asset: ${filename}`);
+              }
+              const file = path.join('dist', filename);
+              const { size } = await fs.stat(file);
+              const sha256 = createHash('sha256').update(await fs.readFile(file)).digest('hex');
+              if (size !== asset.size || (asset.digest && asset.digest !== `sha256:${sha256}`)) {
+                throw new Error(`Release asset differs from the generated package: ${filename}`);
+              }
+              variants[variant] = {
+                filename, url: asset.browser_download_url, alternativeMirrorUrl: null,
+                sizeMB: Number((size / 1_000_000).toFixed(2)), sha256
+              };
+            }
+            // Extrae las notas del release excluyendo la descripción de los paquetes.
+            const body = release.body || '';
+            const description = process.env.RELEASE_DESCRIPTION.trim();
+            const notes = (body.startsWith(description) ? body.slice(description.length) : body).trim();
+            const manifest = {
+              version, isEnabled: !release.draft,
+              publishedAt: release.draft ? null : release.published_at,
+              siteDownload: process.env.RELEASE_DOWNLOAD_URL,
+              siteSponsor: process.env.RELEASE_SPONSOR_URL,
+              siteRepositoryGH: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`,
+              changelog: notes ? [notes] : [],
+              platform: {
+                windows: { isAvailable: true, variants },
+                linux: { isAvailable: false, variants: null },
+                macos: { isAvailable: false, variants: null }
+              },
+              isCritical: false, minSupportedVersion: null
+            };
+            const latest = path.join('dist', 'latest.json');
+            await fs.writeFile(latest, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+            await fs.copyFile(latest, path.join('dist', `${tag}.json`));
+            core.info(`Generated latest.json and ${tag}.json with identical content.`);
+
+      # Almacena los manifiestos como artefactos independientes de Actions.
+      - name: Store latest release JSON
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          if-no-files-found: error
+          path: dist/latest.json
+
+      - name: Store versioned release JSON
+        uses: actions/upload-artifact@v7
+        with:
+          archive: false
+          if-no-files-found: error
+          path: dist/v${{ needs.version.outputs.version }}.json
+
+      # Publica latest.json después del manifiesto de versión.
+      - name: Upload release manifests to FTP
+        if: steps.published.outcome == 'success' || steps.draft.outcome == 'success'
+        shell: pwsh
+        env:
+          FTP_SERVER: ${{ vars.FTP_SERVER || secrets.FTP_SERVER }}
+          FTP_PORT: ${{ vars.FTP_PORT || secrets.FTP_PORT }}
+          FTP_USERNAME: ${{ vars.FTP_USERNAME || secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_FILE_PREFIX: ${{ steps.draft.outcome == 'success' && 'draft_' || '' }}
+          RELEASE_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if (-not $env:FTP_SERVER -or -not $env:FTP_USERNAME -or -not $env:FTP_PASSWORD) {
+            throw 'Set FTP_SERVER and FTP_USERNAME in repository variables or secrets, and FTP_PASSWORD in repository secrets.'
+          }
+          if ([Uri]::CheckHostName($env:FTP_SERVER) -eq [UriHostNameType]::Unknown) {
+            throw 'FTP_SERVER must contain a hostname or IP address.'
+          }
+
+          $ftpRoot = [UriBuilder]::new('ftp', $env:FTP_SERVER, [int]$env:FTP_PORT).Uri.AbsoluteUri
+          # La doble barra selecciona una ruta desde la raíz del servidor.
+          $destination = "$ftpRoot/versions/"
+          $credentials = "${env:FTP_USERNAME}:${env:FTP_PASSWORD}"
+          foreach ($filename in @("v$env:RELEASE_VERSION.json", 'latest.json')) {
+            $remoteName = "${env:FTP_FILE_PREFIX}$filename"
+            curl.exe --silent --show-error --connect-timeout 15 --max-time 90 --retry 2 `
+              --user $credentials --upload-file "dist/$filename" --url "$destination$remoteName"
+            if ($LASTEXITCODE -ne 0) {
+              throw "FTP upload failed for $remoteName (curl exit code $LASTEXITCODE)."
+            }
+          }
