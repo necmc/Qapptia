@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using Qapptia.Core.Ipc;
@@ -51,6 +53,21 @@ public partial class SplashWindow : Window
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
+    }
+
+    private void OnMinimizeClick(object? sender, RoutedEventArgs e)
+    {
+        ShowInTaskbar = true;
+        WindowState = WindowState.Minimized;
+    }
+
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == WindowStateProperty && WindowState == WindowState.Normal)
+        {
+            ShowInTaskbar = false;
+        }
     }
 
     protected override void OnClosed(EventArgs e)

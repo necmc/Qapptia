@@ -21,6 +21,8 @@ public static class Constants
 
     // Textos e interfaz de la ventana de bienvenida (Splash Screen)
     public const string SplashSubtitle = "Captura, Edición y Productividad";
+    public const string SplashMoveTooltip = "Arrastrar para mover";
+    public const string SplashMinimizeTooltip = "Minimizar";
     public const string VersionBadgeFormat = "v{0}";
     public const string InitialPercentText = "5%";
     public const string PercentFormat = "{0}%";

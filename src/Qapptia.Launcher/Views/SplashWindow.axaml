@@ -14,6 +14,22 @@
         Background="Transparent"
         TransparencyLevelHint="Transparent">
 
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Qapptia.UI.Components/Theme/Icons.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="PathIcon.splash-window-action">
+            <Setter Property="Width" Value="14" />
+            <Setter Property="Height" Value="14" />
+            <Setter Property="Foreground" Value="#64748B" />
+        </Style>
+    </Window.Styles>
+
     <!-- Tarjeta del Splash con esquinas redondeadas y sombra perimetral -->
     <Border Margin="12"
             CornerRadius="16"
@@ -115,6 +131,27 @@
                                  Background="#282D37" />
                 </StackPanel>
             </Grid>
+
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,8,8,0"
+                        Spacing="4">
+                <Button Background="Transparent"
+                        BorderThickness="0"
+                        Padding="7"
+                        Click="OnMinimizeClick"
+                        AutomationProperties.Name="{x:Static common:Constants.SplashMinimizeTooltip}"
+                        ToolTip.Tip="{x:Static common:Constants.SplashMinimizeTooltip}">
+                    <PathIcon Classes="splash-window-action" Data="{StaticResource IconMinimize}" />
+                </Button>
+                <Border Background="Transparent"
+                        Padding="7"
+                        Cursor="SizeAll"
+                        ToolTip.Tip="{x:Static common:Constants.SplashMoveTooltip}">
+                    <PathIcon Classes="splash-window-action" Data="{StaticResource IconDragHandle}" />
+                </Border>
+            </StackPanel>
         </Panel>
     </Border>
 </Window>
