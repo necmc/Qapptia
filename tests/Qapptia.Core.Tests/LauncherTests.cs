@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Qapptia.Core;
 using Qapptia.Core.Ipc;
 using Qapptia.Core.Launcher;
 using Qapptia.Core.Platform;
-using Xunit;
 
 namespace Qapptia.Core.Tests;
 
@@ -44,6 +39,57 @@ public class LauncherTests
         Assert.True(plan.ShouldEnsureCapture);
         Assert.True(plan.ShouldEnsureEditor);
         Assert.Equal("\"C:\\My Photos\\image.png\"", plan.AdditionalArguments);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ActivateEditorAsyncWhenRunningOnlySendsWakeUp(bool wakeUpResult)
+    {
+        var launcher = new FakeProcessLauncher { WakeUpResult = wakeUpResult };
+        launcher.ActiveChannels.Add(IpcChannels.Editor);
+
+        bool handled = await LauncherOrchestrator.ActivateEditorAsync(AppContext.BaseDirectory, launcher, launchIfClosed: true);
+
+        Assert.Equal(wakeUpResult, handled);
+        Assert.Equal(IpcChannels.Editor, Assert.Single(launcher.WokenChannels));
+        Assert.Empty(launcher.StartedProcesses);
+    }
+
+    [Fact]
+    public async Task ActivateEditorAsyncWhenClosedAndLaunchForbiddenDoesNothing()
+    {
+        var launcher = new FakeProcessLauncher();
+
+        bool handled = await LauncherOrchestrator.ActivateEditorAsync(AppContext.BaseDirectory, launcher, launchIfClosed: false);
+
+        Assert.True(handled);
+        Assert.Empty(launcher.WokenChannels);
+        Assert.Empty(launcher.StartedProcesses);
+    }
+
+    [Fact]
+    public async Task ActivateEditorAsyncWhenClosedStartsResolvedEditorWithArguments()
+    {
+        var launcher = new FakeProcessLauncher();
+        var root = Directory.CreateTempSubdirectory();
+        try
+        {
+            var app = root.CreateSubdirectory("app");
+            string executableName = OperatingSystem.IsWindows() ? Constants.EditorExecutableName : Path.GetFileNameWithoutExtension(Constants.EditorExecutableName);
+            string executablePath = Path.Combine(app.FullName, executableName);
+            File.WriteAllBytes(executablePath, []);
+
+            bool handled = await LauncherOrchestrator.ActivateEditorAsync(root.FullName, launcher, launchIfClosed: true, Constants.ArgEditor);
+
+            Assert.True(handled);
+            Assert.Equal((executablePath, Constants.ArgEditor, app.FullName), Assert.Single(launcher.StartedProcesses));
+            Assert.Empty(launcher.WokenChannels);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+        }
     }
 
     [Fact]
@@ -197,6 +243,7 @@ public class LauncherTests
         public HashSet<string> ActiveChannels { get; } = new(StringComparer.OrdinalIgnoreCase);
         public List<(string Executable, string? Arguments, string WorkingDirectory)> StartedProcesses { get; } = new();
         public List<string> WokenChannels { get; } = new();
+        public bool WakeUpResult { get; init; } = true;
 
         public bool IsInstanceActive(string channel) => ActiveChannels.Contains(channel);
 
@@ -209,7 +256,7 @@ public class LauncherTests
         public Task<bool> SendWakeUpAsync(string channel, int timeoutMs = 1000)
         {
             WokenChannels.Add(channel);
-            return Task.FromResult(true);
+            return Task.FromResult(WakeUpResult);
         }
     }
 }

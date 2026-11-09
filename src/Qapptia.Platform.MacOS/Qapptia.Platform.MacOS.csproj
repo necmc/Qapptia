@@ -2,9 +2,11 @@
 
   <PropertyGroup>
     <RootNamespace>Qapptia.Platform.MacOS</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Serilog" />
   </ItemGroup>

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Qapptia.Core.Ipc;
 
 namespace Qapptia.Core.Launcher;
@@ -165,6 +160,28 @@ public static class LauncherOrchestrator
         return flatPath;
     }
 
+    public static bool StartSiblingProcess(
+        string baseDirectory, IProcessLauncher launcher, string executableName, string? arguments)
+    {
+        string executablePath = ResolveExecutablePath(baseDirectory, executableName);
+        string workingDirectory = Path.GetDirectoryName(executablePath) ?? baseDirectory;
+        return launcher.StartProcess(executablePath, arguments, workingDirectory);
+    }
+
+    /// <summary>
+    /// Activa la instancia del Editor o lo inicia si está permitido. Un clic con el Editor cerrado se considera atendido.
+    /// </summary>
+    public static Task<bool> ActivateEditorAsync(
+        string baseDirectory, IProcessLauncher launcher, bool launchIfClosed, string? arguments = null)
+    {
+        if (launcher.IsInstanceActive(IpcChannels.Editor))
+        {
+            return launcher.SendWakeUpAsync(IpcChannels.Editor);
+        }
+
+        return Task.FromResult(!launchIfClosed || StartSiblingProcess(baseDirectory, launcher, Constants.EditorExecutableName, arguments));
+    }
+
     /// <summary>
     /// Ejecuta el despacho del plan asegurando o despertando los procesos correspondientes.
     /// </summary>
@@ -188,9 +205,7 @@ public static class LauncherOrchestrator
             progress?.Report(new LaunchProgressReport(LaunchStage.Capture, 35));
             if (!launcher.IsInstanceActive(IpcChannels.Capture))
             {
-                string capturePath = ResolveExecutablePath(baseDirectory, Constants.CaptureExecutableName);
-                string workingDir = Path.GetDirectoryName(capturePath) ?? baseDirectory;
-                launcher.StartProcess(capturePath, null, workingDir);
+                StartSiblingProcess(baseDirectory, launcher, Constants.CaptureExecutableName, null);
             }
             else if (plan.Target == LaunchTarget.CaptureOnly)
             {
@@ -201,16 +216,7 @@ public static class LauncherOrchestrator
         if (plan.ShouldEnsureEditor)
         {
             progress?.Report(new LaunchProgressReport(LaunchStage.Editor, 60));
-            if (!launcher.IsInstanceActive(IpcChannels.Editor))
-            {
-                string editorPath = ResolveExecutablePath(baseDirectory, Constants.EditorExecutableName);
-                string workingDir = Path.GetDirectoryName(editorPath) ?? baseDirectory;
-                launcher.StartProcess(editorPath, plan.AdditionalArguments, workingDir);
-            }
-            else
-            {
-                await launcher.SendWakeUpAsync(IpcChannels.Editor).ConfigureAwait(false);
-            }
+            await ActivateEditorAsync(baseDirectory, launcher, launchIfClosed: true, plan.AdditionalArguments).ConfigureAwait(false);
         }
 
         if (plan.ShouldEnsureConfig)
@@ -218,9 +224,7 @@ public static class LauncherOrchestrator
             progress?.Report(new LaunchProgressReport(LaunchStage.Config, 80));
             if (!launcher.IsInstanceActive(IpcChannels.Config))
             {
-                string configPath = ResolveExecutablePath(baseDirectory, Constants.ConfigExecutableName);
-                string workingDir = Path.GetDirectoryName(configPath) ?? baseDirectory;
-                launcher.StartProcess(configPath, plan.AdditionalArguments, workingDir);
+                StartSiblingProcess(baseDirectory, launcher, Constants.ConfigExecutableName, plan.AdditionalArguments);
             }
             else
             {

@@ -78,7 +78,10 @@ public sealed class Program
                                     desktop.MainWindow != null)
                                 {
                                     desktop.MainWindow.Show();
-                                    desktop.MainWindow.WindowState = Avalonia.Controls.WindowState.Normal;
+                                    if (desktop.MainWindow.WindowState == Avalonia.Controls.WindowState.Minimized)
+                                    {
+                                        desktop.MainWindow.WindowState = Avalonia.Controls.WindowState.Normal;
+                                    }
                                     desktop.MainWindow.Activate();
                                     desktop.MainWindow.Topmost = true;
                                     desktop.MainWindow.Topmost = false;

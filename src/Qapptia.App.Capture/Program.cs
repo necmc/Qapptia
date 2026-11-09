@@ -7,6 +7,7 @@ using Qapptia.Capture;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
 using Qapptia.Core.Ipc;
+using Qapptia.Core.Launcher;
 using Qapptia.Core.Logging;
 using Qapptia.Core.Platform;
 using Qapptia.Core.Services;
@@ -18,6 +19,7 @@ using Qapptia.UI.Components;
 using Qapptia.Platform.Windows;
 #elif LINUX
 using Qapptia.Platform.Linux;
+#elif MAC
 using Qapptia.Platform.MacOS;
 #endif
 
@@ -113,14 +115,15 @@ internal static class Program
 
         var configPath = Qapptia.Core.Constants.DefaultConfigPath;
         builder.Services.AddSingleton<IConfigService>(_ => new JsonConfigService(configPath));
+        builder.Services.AddSingleton<IProcessLauncher, DefaultProcessLauncher>();
 
 #if WINDOWS
         // NT 6.1 corresponde a Windows 7
         if (OperatingSystem.IsWindowsVersionAtLeast(6, 1)) builder.Services.AddWindowsPlatform();
 #elif LINUX
         if (OperatingSystem.IsLinux()) builder.Services.AddLinuxPlatform();
-        else if (OperatingSystem.IsMacOS())
-            builder.Services.AddMacOSPlatform();
+#elif MAC
+        if (OperatingSystem.IsMacOS()) builder.Services.AddMacOSPlatform();
 #endif
 
         builder.Services.AddSingleton<IFullscreenCaptureService, FullscreenCaptureService>();
@@ -155,21 +158,26 @@ internal sealed class HeadlessCaptureApp : Application
     {
         base.OnFrameworkInitializationCompleted();
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && AppHost?.Services is { } services)
         {
-            var logger = AppHost?.Services.GetService<Serilog.ILogger>();
-            var captureHandler = AppHost?.Services.GetService<ICaptureActionHandler>();
-            var trayService = AppHost?.Services.GetService<ITrayIconService>();
-            var shellService = AppHost?.Services.GetService<IShellService>();
+            var logger = services.GetService<Serilog.ILogger>();
+            var captureHandler = services.GetService<ICaptureActionHandler>();
+            var trayService = services.GetService<ITrayIconService>();
+            var shellService = services.GetService<IShellService>();
+            var launcher = services.GetRequiredService<IProcessLauncher>();
 
-            var menuDef = new TrayMenuDefinition();
-            var config = AppHost?.Services.GetService<IConfigService>();
+            var menuDef = new TrayMenuDefinition
+            {
+                SingleClickAction = () => ActivateEditorAsync(launcher, launchIfClosed: false),
+                DoubleClickAction = () => ActivateEditorAsync(launcher, launchIfClosed: true)
+            };
+            var config = services.GetService<IConfigService>();
 
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuCaptureScreen, () => captureHandler?.HandleFullscreenCaptureAsync(CancellationToken.None), shortcutTextProvider: () => config?.Current.ShortcutScreen));
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuCaptureArea, () => captureHandler?.HandleAreaCaptureAsync(CancellationToken.None), shortcutTextProvider: () => config?.Current.ShortcutArea));
             menuDef.Items.Add(new TrayMenuSeparatorItem());
-            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuEditor, () => LaunchApp(Qapptia.Core.Constants.EditorExecutableName, Qapptia.Core.Constants.ArgEditor)));
-            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuConfig, () => LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgConfig)));
+            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuEditor, () => _ = ActivateEditorAsync(launcher, launchIfClosed: true)));
+            menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuConfig, () => LaunchApp(launcher, Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgConfig)));
             menuDef.Items.Add(new TrayMenuSeparatorItem());
             long lastSponsorTicks = 0;
             menuDef.Items.Add(new TrayMenuActionItem(Qapptia.UI.Components.Common.Constants.SponsorDefaultActionTitle, () =>
@@ -195,7 +203,7 @@ internal sealed class HeadlessCaptureApp : Application
                     }
                     else
                     {
-                        LaunchApp(Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgAbout);
+                        LaunchApp(launcher, Qapptia.Core.Constants.ConfigExecutableName, Qapptia.Core.Constants.ArgAbout);
                     }
                 },
                 textProvider: () =>
@@ -241,19 +249,30 @@ internal sealed class HeadlessCaptureApp : Application
         }
     }
 
-    private static void LaunchApp(string exeName, string arguments)
+    private static async Task ActivateEditorAsync(IProcessLauncher launcher, bool launchIfClosed)
     {
         try
         {
-            var basePath = AppContext.BaseDirectory;
-            var exePath = Path.Combine(basePath, exeName);
-            if (File.Exists(exePath))
+            bool handled = await LauncherOrchestrator.ActivateEditorAsync(
+                AppContext.BaseDirectory, launcher, launchIfClosed, Qapptia.Core.Constants.ArgEditor).ConfigureAwait(false);
+            if (!handled)
             {
-                Process.Start(new ProcessStartInfo(exePath, arguments) { UseShellExecute = true });
+                Log.Warning("No se pudo solicitar la activación del Editor desde la bandeja.");
             }
-            else
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al abrir el Editor desde la bandeja.");
+        }
+    }
+
+    private static void LaunchApp(IProcessLauncher launcher, string exeName, string arguments)
+    {
+        try
+        {
+            if (!LauncherOrchestrator.StartSiblingProcess(AppContext.BaseDirectory, launcher, exeName, arguments))
             {
-                Log.Error("No se encontró la aplicación: {ExePath}", exePath);
+                Log.Error("No se pudo iniciar la aplicación {ExecutableName}.", exeName);
             }
         }
         catch (Exception ex)

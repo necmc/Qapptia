@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Extensions;
 
@@ -86,22 +82,6 @@ public static class NativeTrayMenuRenderer
         finally
         {
             DestroyMenu(hMenu);
-        }
-    }
-
-    /// <summary>
-    /// Ejecuta la acción por defecto del menú contextual (e.g. doble clic o clic principal en el icono de bandeja).
-    /// </summary>
-    public static void ExecuteDefaultAction(TrayMenuDefinition menuDefinition)
-    {
-        if (menuDefinition == null) return;
-
-        var defaultAction = menuDefinition.Items.OfType<TrayMenuActionItem>().Where(a => a.IsVisible).FirstOrDefault(a => a.IsDefault)
-            ?? menuDefinition.Items.OfType<TrayMenuActionItem>().FirstOrDefault(a => a.IsVisible);
-
-        if (defaultAction != null)
-        {
-            Task.Run(() => defaultAction.OnClick?.Invoke());
         }
     }
 

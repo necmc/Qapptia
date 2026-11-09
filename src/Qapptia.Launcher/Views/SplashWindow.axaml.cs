@@ -147,9 +147,7 @@ public partial class SplashWindow : Window
 
             if (!launcher.IsInstanceActive(IpcChannels.Capture))
             {
-                string capturePath = LauncherOrchestrator.ResolveExecutablePath(baseDirectory, Qapptia.Core.Constants.CaptureExecutableName);
-                string workingDir = Path.GetDirectoryName(capturePath) ?? baseDirectory;
-                launcher.StartProcess(capturePath, null, workingDir);
+                LauncherOrchestrator.StartSiblingProcess(baseDirectory, launcher, Qapptia.Core.Constants.CaptureExecutableName, null);
 
                 // Verificación activa de arranque de Capture (hasta 150ms)
                 for (int i = 0; i < Constants.CaptureCheckMaxAttempts && !launcher.IsInstanceActive(IpcChannels.Capture); i++)
@@ -171,16 +169,7 @@ public partial class SplashWindow : Window
         {
             UpdateProgress(Constants.EditorProgressPercent, Constants.ProgressEditor);
 
-            if (!launcher.IsInstanceActive(IpcChannels.Editor))
-            {
-                string editorPath = LauncherOrchestrator.ResolveExecutablePath(baseDirectory, Qapptia.Core.Constants.EditorExecutableName);
-                string workingDir = Path.GetDirectoryName(editorPath) ?? baseDirectory;
-                launcher.StartProcess(editorPath, plan.AdditionalArguments, workingDir);
-            }
-            else
-            {
-                await launcher.SendWakeUpAsync(IpcChannels.Editor).ConfigureAwait(false);
-            }
+            await LauncherOrchestrator.ActivateEditorAsync(baseDirectory, launcher, launchIfClosed: true, plan.AdditionalArguments).ConfigureAwait(false);
 
             // 4. Sondeo y validación granular de arranque del Editor (70% -> 85% -> 100%)
             await WaitForEditorReadyGranularAsync(launcher, IpcChannels.Editor, Constants.SplashWaitTimeoutMs).ConfigureAwait(false);
@@ -190,9 +179,7 @@ public partial class SplashWindow : Window
             UpdateProgress(Constants.EditorProgressPercent, Constants.ProgressConfig);
             if (!launcher.IsInstanceActive(IpcChannels.Config))
             {
-                string configPath = LauncherOrchestrator.ResolveExecutablePath(baseDirectory, Qapptia.Core.Constants.ConfigExecutableName);
-                string workingDir = Path.GetDirectoryName(configPath) ?? baseDirectory;
-                launcher.StartProcess(configPath, plan.AdditionalArguments, workingDir);
+                LauncherOrchestrator.StartSiblingProcess(baseDirectory, launcher, Qapptia.Core.Constants.ConfigExecutableName, plan.AdditionalArguments);
             }
             else
             {

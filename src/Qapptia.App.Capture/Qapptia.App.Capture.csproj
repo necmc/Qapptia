@@ -41,6 +41,8 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
     <None Update="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\Qapptia.App.Editor\Assets\tray_icon.png" Link="Assets\tray_icon.png"
+          CopyToOutputDirectory="PreserveNewest" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
   </ItemGroup>
 
 </Project>

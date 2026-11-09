@@ -1,8 +1,4 @@
-using System;
-using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using Qapptia.Core;
 using Qapptia.Core.Abstractions;
 using Qapptia.Platform.Windows.UI;
@@ -30,9 +26,11 @@ public sealed class WindowsTrayIconService : ITrayIconService
     private const uint WM_ENDSESSION = 0x0016;
     private const uint WM_POWERBROADCAST = 0x0218;
     private const uint WM_DISPLAYCHANGE = 0x007E;
+    private const uint WM_TIMER = 0x0113;
     private const long PBT_APMRESUMEAUTOMATIC = 0x0012;
     private const long PBT_APMRESUMESUSPEND = 0x0007;
 
+    private const uint WM_LBUTTONDOWN = 0x0201;
     private const uint WM_LBUTTONUP = 0x0202;
     private const uint WM_LBUTTONDBLCLK = 0x0203;
     private const uint WM_RBUTTONUP = 0x0205;
@@ -48,6 +46,9 @@ public sealed class WindowsTrayIconService : ITrayIconService
     private TrayMenuDefinition? _menuDefinition;
     private string? _iconPath;
     private bool _disposed;
+    private nuint _singleClickTimerId;
+    private nuint _nextTimerId;
+    private bool _ignoreNextLeftButtonUp;
     private WndProcDelegate? _wndProcDelegate;
 
     public WindowsTrayIconService(ILogger logger)
@@ -151,20 +152,46 @@ public sealed class WindowsTrayIconService : ITrayIconService
             {
                 case WM_RBUTTONUP:
                 case WM_CONTEXTMENU:
+                    CancelPendingSingleClick(hWnd);
                     if (_menuDefinition != null && _hwnd != IntPtr.Zero)
                     {
                         NativeTrayMenuRenderer.Show(_hwnd, _menuDefinition);
                     }
                     return IntPtr.Zero;
 
+                case WM_LBUTTONDOWN:
+                    _ignoreNextLeftButtonUp = false;
+                    return IntPtr.Zero;
+
                 case WM_LBUTTONUP:
-                case WM_LBUTTONDBLCLK:
-                    if (_menuDefinition != null)
+                    if (_ignoreNextLeftButtonUp)
                     {
-                        NativeTrayMenuRenderer.ExecuteDefaultAction(_menuDefinition);
+                        _ignoreNextLeftButtonUp = false;
+                    }
+                    else if (!_disposed && _menuDefinition?.SingleClickAction != null)
+                    {
+                        CancelPendingSingleClick(hWnd);
+                        // Cada espera tiene su propio identificador para ignorar temporizadores cancelados que sigan en cola.
+                        _singleClickTimerId = SetTimer(hWnd, ++_nextTimerId, GetDoubleClickTime(), IntPtr.Zero);
+                        if (_singleClickTimerId == 0)
+                        {
+                            _logger.Warning("No se pudo programar el clic simple de la bandeja.");
+                        }
                     }
                     return IntPtr.Zero;
+
+                case WM_LBUTTONDBLCLK:
+                    CancelPendingSingleClick(hWnd);
+                    _ignoreNextLeftButtonUp = true;
+                    QueueIconAction(_menuDefinition?.DoubleClickAction);
+                    return IntPtr.Zero;
             }
+        }
+        else if (msg == WM_TIMER && _singleClickTimerId != 0 && (nuint)wParam == _singleClickTimerId)
+        {
+            CancelPendingSingleClick(hWnd);
+            QueueIconAction(_menuDefinition?.SingleClickAction);
+            return IntPtr.Zero;
         }
         else if (msg == WM_REFRESH_TRAYICON || (_wmTaskbarCreated != 0 && msg == _wmTaskbarCreated))
         {
@@ -196,6 +223,7 @@ public sealed class WindowsTrayIconService : ITrayIconService
         {
             if (wParam != IntPtr.Zero)
             {
+                CancelPendingSingleClick(hWnd);
                 _logger.Information("Fin de sesión del sistema en curso (WM_ENDSESSION). Eliminando icono de bandeja.");
                 RemoveTrayIcon();
             }
@@ -208,11 +236,27 @@ public sealed class WindowsTrayIconService : ITrayIconService
         }
         else if (msg == WM_DESTROY)
         {
+            CancelPendingSingleClick(hWnd);
             PostQuitMessage(0);
             return IntPtr.Zero;
         }
 
         return DefWindowProc(hWnd, msg, wParam, lParam);
+    }
+
+    private void CancelPendingSingleClick(IntPtr hWnd)
+    {
+        if (_singleClickTimerId == 0) return;
+
+        _ = KillTimer(hWnd, _singleClickTimerId);
+        _singleClickTimerId = 0;
+    }
+
+    private void QueueIconAction(Func<Task>? action)
+    {
+        if (_disposed || action == null) return;
+
+        _ = Task.Run(action);
     }
 
     public void ShowNotification(string title, string message, TrayNotificationType type = TrayNotificationType.Info, int timeoutMs = Constants.NotificationDurationMs)
@@ -402,6 +446,15 @@ public sealed class WindowsTrayIconService : ITrayIconService
 
     [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDoubleClickTime();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern nuint SetTimer(IntPtr hWnd, nuint id, uint intervalMs, IntPtr timerProc);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool KillTimer(IntPtr hWnd, nuint id);
 
     [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern IntPtr LoadImage(IntPtr hInst, string name, uint type, int cx, int cy, uint fuLoad);

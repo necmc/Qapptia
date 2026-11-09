@@ -3,6 +3,8 @@ namespace Qapptia.Core.Abstractions;
 public sealed class TrayMenuDefinition
 {
     public List<TrayMenuItem> Items { get; } = new();
+    public Func<Task>? SingleClickAction { get; init; }
+    public Func<Task>? DoubleClickAction { get; init; }
 }
 
 public abstract class TrayMenuItem
