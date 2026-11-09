@@ -69,6 +69,9 @@ public sealed class WindowsScreenCapture : IScreenCapture
 
                 try
                 {
+                    (int X, int Y)? cursor = captureAllScreens && PInvoke.GetCursorPos(out var position)
+                        ? (position.X, position.Y)
+                        : null;
                     if (!PInvoke.BitBlt(hdcMem, 0, 0, width, height, hdcScreen, x, y, ROP_CODE.SRCCOPY))
                         throw new InvalidOperationException($"BitBlt failed: {Marshal.GetLastWin32Error()}");
 
@@ -110,7 +113,7 @@ public sealed class WindowsScreenCapture : IScreenCapture
                     }
 
                     _logger.Debug("Captura {W}x{H} @ ({X},{Y})", width, height, x, y);
-                    return new ScreenCaptureResult(pixels, width, height, x, y);
+                    return new ScreenCaptureResult(pixels, width, height, x, y) { CursorAtCapture = cursor };
                 }
                 finally
                 {

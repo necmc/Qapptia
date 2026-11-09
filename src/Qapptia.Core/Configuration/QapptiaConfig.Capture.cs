@@ -68,6 +68,9 @@ public sealed partial class QapptiaConfig
     [JsonPropertyName("capture_all_screens")]
     public bool CaptureAllScreens { get; set; } = false;
 
+    [JsonPropertyName("show_capture_indicator")]
+    public bool ShowCaptureIndicator { get; set; } = true;
+
     // === Scroll capture (omitido en esta migracion, conservado por compat) ===
 
     [JsonPropertyName("enable_scroll_capture")]

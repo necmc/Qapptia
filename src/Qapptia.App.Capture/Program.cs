@@ -119,7 +119,11 @@ internal static class Program
 
 #if WINDOWS
         // NT 6.1 corresponde a Windows 7
-        if (OperatingSystem.IsWindowsVersionAtLeast(6, 1)) builder.Services.AddWindowsPlatform();
+        if (OperatingSystem.IsWindowsVersionAtLeast(6, 1))
+        {
+            builder.Services.AddWindowsPlatform();
+            builder.Services.AddSingleton<ICaptureVisualFeedback, AvaloniaCaptureVisualFeedback>();
+        }
 #elif LINUX
         if (OperatingSystem.IsLinux()) builder.Services.AddLinuxPlatform();
 #elif MAC
@@ -163,6 +167,8 @@ internal sealed class HeadlessCaptureApp : Application
             var logger = services.GetService<Serilog.ILogger>();
             var captureHandler = services.GetService<ICaptureActionHandler>();
             var trayService = services.GetService<ITrayIconService>();
+            if (services.GetService<ICaptureVisualFeedback>() is IDisposable indicator)
+                desktop.Exit += (_, _) => indicator.Dispose();
             var shellService = services.GetService<IShellService>();
             var launcher = services.GetRequiredService<IProcessLauncher>();
 

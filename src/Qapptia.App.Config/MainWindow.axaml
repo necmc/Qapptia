@@ -6,8 +6,8 @@
         xmlns:controls="using:Qapptia.App.Config.Controls"
         xmlns:config="clr-namespace:Qapptia.App.Config.Common"
         xmlns:core="using:Qapptia.Core"
-        mc:Ignorable="d" d:DesignWidth="580" d:DesignHeight="530"
-        Width="580" Height="530"
+        mc:Ignorable="d" d:DesignWidth="580" d:DesignHeight="570"
+        Width="580" Height="570"
         WindowStartupLocation="CenterScreen"
         CanResize="False"
         x:Class="Qapptia.App.Config.MainWindow"
@@ -97,6 +97,8 @@
                 <TabItem.ContentTemplate>
                     <DataTemplate x:DataType="vm:ConfigViewModel">
                         <StackPanel Spacing="16" Margin="16">
+
+                            <CheckBox Content="Mostrar indicador visual de captura" IsChecked="{Binding ShowCaptureIndicator}" />
 
                             <!-- Cursor -->
                             <HeaderedContentControl Header="Cursor">

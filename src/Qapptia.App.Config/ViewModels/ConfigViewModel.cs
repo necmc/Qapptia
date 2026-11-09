@@ -132,6 +132,9 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     private bool _captureAllScreens;
 
     [ObservableProperty]
+    private bool _showCaptureIndicator;
+
+    [ObservableProperty]
     private string _footerMessage = string.Empty;
 
     [ObservableProperty]
@@ -174,6 +177,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         CopyToClipboardScreen = config.CopyToClipboardScreen;
         CopyToClipboardArea = config.CopyToClipboardArea;
         CaptureAllScreens = config.CaptureAllScreens;
+        ShowCaptureIndicator = config.ShowCaptureIndicator;
 
         LoadAutoStartFromSystem();
     }
@@ -225,7 +229,10 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
             var changes = new ConfigChanges(
                 ConfigPresentation.FromThemeName(SelectedTheme), SavePath, FilenameFormat,
                 SubfolderMonth, SubfolderDay, SubfolderHour, ShowMouse, HighlightMouse, ManualTimer,
-                ShortcutScreen, ShortcutArea, CopyToClipboardScreen, CopyToClipboardArea, CaptureAllScreens);
+                ShortcutScreen, ShortcutArea, CopyToClipboardScreen, CopyToClipboardArea, CaptureAllScreens)
+            {
+                ShowCaptureIndicator = ShowCaptureIndicator
+            };
             var saved = _settingsService.SavePreferences(changes, IsLoadingAutoStart ? null : _autoStartState, requestedAutoStart);
             if (!saved.IsValid)
             {

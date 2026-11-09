@@ -8,7 +8,10 @@ public sealed record ConfigChanges(
     bool SubfolderMonth, bool SubfolderDay, bool SubfolderHour,
     bool ShowMouse, bool HighlightMouse, int ManualTimer,
     string ShortcutScreen, string ShortcutArea,
-    bool CopyToClipboardScreen, bool CopyToClipboardArea, bool CaptureAllScreens);
+    bool CopyToClipboardScreen, bool CopyToClipboardArea, bool CaptureAllScreens)
+{
+    public bool ShowCaptureIndicator { get; init; } = true;
+}
 
 public sealed record ConfigSaveResult(bool IsValid, string Theme, bool ChangeAutoStart);
 

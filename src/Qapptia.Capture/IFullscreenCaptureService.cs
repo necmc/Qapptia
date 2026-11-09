@@ -14,4 +14,7 @@ public sealed record CaptureResult(
     string FilePath,
     byte[] PngBytes,
     int Width,
-    int Height);
+    int Height)
+{
+    public CaptureFeedbackTarget? FeedbackTarget { get; init; }
+}

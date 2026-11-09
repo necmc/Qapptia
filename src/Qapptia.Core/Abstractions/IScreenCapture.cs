@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Qapptia.Core.Abstractions;
 
 /// <summary>
@@ -11,7 +8,11 @@ public sealed record ScreenCaptureResult(
     int Width,
     int Height,
     int OriginX,
-    int OriginY);
+    int OriginY)
+{
+    public (int X, int Y)? CursorAtCapture { get; init; }
+    public IReadOnlyList<CaptureDisplay> DisplaysAtCapture { get; init; } = [];
+}
 
 /// <summary>
 /// Captura la pantalla completa (virtual screen, multi-monitor) del OS anfitrión.

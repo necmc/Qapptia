@@ -18,6 +18,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
     private readonly IShutterSoundService _shutterSound;
     private readonly ILogger _logger;
     private readonly ITrayIconService? _trayService;
+    private readonly ICaptureVisualFeedback? _visualFeedback;
     private readonly Channel<CaptureJob> _channel = Channel.CreateBounded<CaptureJob>(4);
 
     private IHotkeyHandle? _hotkeyScreen;
@@ -35,7 +36,8 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
         IPowerEvents powerEvents,
         IShutterSoundService shutterSound,
         ILogger logger,
-        ITrayIconService? trayService = null)
+        ITrayIconService? trayService = null,
+        ICaptureVisualFeedback? visualFeedback = null)
     {
         _hotkeys = hotkeys;
         _fullscreenCapture = fullscreenCapture;
@@ -45,6 +47,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
         _shutterSound = shutterSound;
         _logger = logger;
         _trayService = trayService;
+        _visualFeedback = visualFeedback;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -53,7 +56,14 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
         SetupPowerEvents();
         RegisterHotkeys();
 
-        await ProcessChannelAsync(stoppingToken);
+        try
+        {
+            await ProcessChannelAsync(stoppingToken);
+        }
+        finally
+        {
+            _visualFeedback?.Dismiss();
+        }
     }
 
     public async Task HandleWakeUpAsync(CancellationToken ct)
@@ -77,28 +87,27 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
     {
         _logger.Information("Refrescando tray, config y hotkeys");
         _config.Reload();
+        if (!_config.Current.ShowCaptureIndicator) _visualFeedback?.Dismiss();
         UnregisterHotkeys();
         RegisterHotkeys();
         _trayService?.RefreshIcon();
     }
 
-    public async Task HandleFullscreenCaptureAsync(CancellationToken ct)
-    {
-        await _channel.Writer.WriteAsync(new CaptureJob
-        {
-            Mode = CaptureMode.Fullscreen,
-            DelayMs = _config.Current.ManualTimer * 1000,
-            IncludeCursor = _config.Current.ShowMouse,
-        }, ct);
-    }
+    public Task HandleFullscreenCaptureAsync(CancellationToken ct) => QueueCaptureAsync(CaptureMode.Fullscreen, ct);
 
-    public async Task HandleAreaCaptureAsync(CancellationToken ct)
+    public Task HandleAreaCaptureAsync(CancellationToken ct) => QueueCaptureAsync(CaptureMode.Area, ct);
+
+    private async Task QueueCaptureAsync(CaptureMode mode, CancellationToken ct)
     {
+        ct.ThrowIfCancellationRequested();
+        var config = _config.Current;
+        if (config.ManualTimer == 0) _visualFeedback?.Dismiss();
+
         await _channel.Writer.WriteAsync(new CaptureJob
         {
-            Mode = CaptureMode.Area,
-            DelayMs = _config.Current.ManualTimer * 1000,
-            IncludeCursor = _config.Current.ShowMouse,
+            Mode = mode,
+            DelayMs = config.ManualTimer * 1000,
+            IncludeCursor = config.ShowMouse,
         }, ct);
     }
 
@@ -138,8 +147,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
                 _logger.Information("Captura {Mode} -> {Path} ({W}x{H})",
                     job.Mode, result.FilePath, result.Width, result.Height);
 
-                _logger.Debug("Invocando PlayAsync desde CaptureWorker (Mode={Mode})", job.Mode);
-                _ = _shutterSound.PlayAsync(CancellationToken.None);
+                if (!ct.IsCancellationRequested) DispatchConfirmation(result);
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
@@ -150,6 +158,20 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
             {
                 _captureGate.Release();
             }
+        }
+    }
+
+    private void DispatchConfirmation(CaptureResult result)
+    {
+        _ = Task.Run(async () =>
+        {
+            try { await _shutterSound.PlayAsync(CancellationToken.None); }
+            catch (Exception ex) { _logger.Warning(ex, "No se pudo reproducir el sonido de captura."); }
+        });
+
+        if (_visualFeedback != null && _config.Current.ShowCaptureIndicator && result.FeedbackTarget is { } target)
+        {
+            _visualFeedback.Enqueue(target);
         }
     }
 

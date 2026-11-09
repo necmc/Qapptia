@@ -1,5 +1,7 @@
+using System.Text.Json;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
+using Qapptia.Core.Serialization;
 using Qapptia.Core.Theme;
 
 namespace Qapptia.Core.Tests;
@@ -17,7 +19,8 @@ public sealed class ConfigSettingsServiceTests
 
         var saved = service.SavePreferences(Changes() with
         {
-            ShowMouse = false, HighlightMouse = true, FilenameFormat = " ", ShortcutScreen = "", ShortcutArea = " "
+            ShowMouse = false, HighlightMouse = true, FilenameFormat = " ", ShortcutScreen = "", ShortcutArea = " ",
+            ShowCaptureIndicator = false
         }, new(AutoStartScope.CurrentUser, true), true);
 
         Assert.True(saved.IsValid);
@@ -28,9 +31,21 @@ public sealed class ConfigSettingsServiceTests
         Assert.Equal(Constants.DefaultShortcutScreen, config.Current.ShortcutScreen);
         Assert.Equal(Constants.DefaultShortcutArea, config.Current.ShortcutArea);
         Assert.False(config.Current.ShowEditorHelpOnStartup);
+        Assert.False(config.Current.ShowCaptureIndicator);
         Assert.Equal("alt+f", config.Current.ShortcutFlow);
         Assert.Equal(1, config.SaveCount);
         Assert.Equal(ThemeConstants.Dark, processes.Theme);
+    }
+
+    [Theory]
+    [InlineData("{}", true)]
+    [InlineData("{\"show_capture_indicator\":false}", false)]
+    public void CaptureIndicatorDefaultsOnAndRespectsStoredPreference(string json, bool expected)
+    {
+        var config = JsonSerializer.Deserialize(json, QapptiaJsonContext.Default.QapptiaConfig);
+
+        Assert.NotNull(config);
+        Assert.Equal(expected, config.ShowCaptureIndicator);
     }
 
     [Fact]

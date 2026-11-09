@@ -23,7 +23,7 @@
 
     <!-- Versionado (SemVer 2.0.0) -->
     <VersionPrefix>2.0.0</VersionPrefix>
-    <VersionSuffix>beta</VersionSuffix>
+    <VersionSuffix>beta.2</VersionSuffix>
 
     <!-- Omitir ensamblados satélite de localización de paquetes de terceros -->
     <SatelliteResourceLanguages>none</SatelliteResourceLanguages>

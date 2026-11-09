@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Capture;
@@ -16,6 +15,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
     private readonly IDesktopService _desktop;
     private readonly IConfigService _config;
     private readonly ILogger _logger;
+    private readonly ICaptureVisualFeedback? _visualFeedback;
 
     public FullscreenCaptureService(
         IScreenCapture screenCapture,
@@ -23,7 +23,8 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
         IClipboardService clipboard,
         IDesktopService desktop,
         IConfigService config,
-        ILogger logger)
+        ILogger logger,
+        ICaptureVisualFeedback? visualFeedback = null)
     {
         _screenCapture = screenCapture;
         _cursorCapture = cursorCapture;
@@ -31,13 +32,14 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
         _desktop = desktop;
         _config = config;
         _logger = logger;
+        _visualFeedback = visualFeedback;
     }
 
     public async Task<CaptureResult> CaptureAsync(CaptureJob job, CancellationToken ct = default)
     {
         if (job.DelayMs > 0) await Task.Delay(job.DelayMs, ct);
 
-        var screen = await _screenCapture.CaptureScreenAsync(_config.Current.CaptureAllScreens, ct);
+        var screen = await ReadScreenAsync(ct);
 
         using var image = SKBitmap.FromImage(SKImage.FromPixels(
             new SKImageInfo(screen.Width, screen.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul),
@@ -49,12 +51,13 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
         }
 
         using var fullPng = image.Encode(SKEncodedImageFormat.Png, 100);
-        return await FinalizeAsync(fullPng.ToArray(), screen.Width, screen.Height, job, ct);
+        var bounds = new AreaInfo(screen.OriginX, screen.OriginY, screen.Width, screen.Height);
+        return await FinalizeAsync(fullPng.ToArray(), bounds, job, screen, ct);
     }
 
     public async Task<ScreenCaptureResult> CaptureFrozenScreenAsync(bool includeCursor, CancellationToken ct = default)
     {
-        var screen = await _screenCapture.CaptureScreenAsync(_config.Current.CaptureAllScreens, ct);
+        var screen = await ReadScreenAsync(ct);
 
         if (includeCursor && _config.Current.ShowMouse)
         {
@@ -82,7 +85,20 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
         fullBitmap.ExtractSubset(cropped, sourceRect);
 
         using var pngData = cropped.Encode(SKEncodedImageFormat.Png, 100);
-        return await FinalizeAsync(pngData.ToArray(), cropped.Width, cropped.Height, job, ct);
+        var bounds = area with { Width = cropped.Width, Height = cropped.Height };
+        return await FinalizeAsync(pngData.ToArray(), bounds, job, frozenScreen, ct);
+    }
+
+    private async Task<ScreenCaptureResult> ReadScreenAsync(CancellationToken ct)
+    {
+        if (_visualFeedback == null)
+            return await _screenCapture.CaptureScreenAsync(_config.Current.CaptureAllScreens, ct);
+
+        await _visualFeedback.HideBeforeCaptureAsync(ct);
+        var config = _config.Current;
+        var displays = config.ShowCaptureIndicator ? _visualFeedback.GetDisplays() : [];
+        var screen = await _screenCapture.CaptureScreenAsync(config.CaptureAllScreens, ct);
+        return screen with { DisplaysAtCapture = displays };
     }
 
     private async Task OverlayCursorAsync(SKBitmap bitmap, int originX, int originY, CancellationToken ct = default)
@@ -131,7 +147,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
     }
 
     private async Task<CaptureResult> FinalizeAsync(
-        byte[] pngBytes, int w, int h, CaptureJob job, CancellationToken ct)
+        byte[] pngBytes, AreaInfo bounds, CaptureJob job, ScreenCaptureResult screen, CancellationToken ct)
     {
         var path = BuildFilePath();
         var dir = Path.GetDirectoryName(path)!;
@@ -151,7 +167,11 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
             catch (Exception ex) { _logger.Warning(ex, "Fallo clipboard"); }
         }
 
-        return new CaptureResult(path, finalBytes, w, h);
+        return new CaptureResult(path, finalBytes, bounds.Width, bounds.Height)
+        {
+            FeedbackTarget = screen.DisplaysAtCapture.Count == 0 ? null : new CaptureFeedbackTarget(
+                bounds, job.Mode == CaptureMode.Fullscreen ? screen.CursorAtCapture : null, screen.DisplaysAtCapture)
+        };
     }
 
     internal string BuildFilePath(DateTime? timestamp = null)

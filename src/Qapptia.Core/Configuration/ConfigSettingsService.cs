@@ -40,6 +40,7 @@ public sealed class ConfigSettingsService(
         Current.CopyToClipboardScreen = changes.CopyToClipboardScreen;
         Current.CopyToClipboardArea = changes.CopyToClipboardArea;
         Current.CaptureAllScreens = changes.CaptureAllScreens;
+        Current.ShowCaptureIndicator = changes.ShowCaptureIndicator;
         configService.Save();
         processes.NotifyPreferencesChanged(Current.Theme);
         return new(true, Current.Theme, canConfigure && requestedAutoStart != observedState!.IsEnabled);

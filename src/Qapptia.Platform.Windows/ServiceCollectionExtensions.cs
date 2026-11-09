@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
             throw new PlatformNotSupportedException("AddWindowsPlatform requiere Windows.");
 
         services.TryAddSingleton<IScreenCapture, WindowsScreenCapture>();
+        services.TryAddSingleton<ICaptureIndicatorSurface, WindowsCaptureIndicatorSurface>();
         services.TryAddSingleton<ICursorCapture, WindowsCursorCapture>();
         services.TryAddSingleton<IHotkeyRegistrar, WindowsHotkeyRegistrar>();
         services.TryAddSingleton<IPowerEvents, WindowsPowerEvents>();
