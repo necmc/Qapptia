@@ -27,7 +27,7 @@ public sealed class ConfigAutoStartTests
                 return new AutoStartState(AutoStartScope.CurrentUser, enabled);
             });
             var config = new RecordingConfigService();
-            config.Current.AutoStart = !enabled;
+            config.Current.General.AutoStart = !enabled;
             using var vm = CreateViewModel(config, service.Object);
             var loaded = ObserveLoadCompletion(vm);
             try
@@ -52,7 +52,7 @@ public sealed class ConfigAutoStartTests
             await loaded.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
             vm.AutoStart.Should().Be(enabled);
             vm.CanEditAutoStart.Should().BeTrue();
-            config.Current.AutoStart.Should().Be(!enabled);
+            config.Current.General.AutoStart.Should().Be(!enabled);
             service.Verify(s => s.SetEnabledAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }, TestContext.Current.CancellationToken);
     }
@@ -115,7 +115,7 @@ public sealed class ConfigAutoStartTests
                 : new AutoStartState(AutoStartScope.Portable, false);
             var service = CreateService(state);
             var config = new RecordingConfigService();
-            config.Current.AutoStart = true;
+            config.Current.General.AutoStart = true;
             using var vm = CreateViewModel(config, service.Object);
             await ObserveLoadCompletion(vm).WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
             vm.AutoStart.Should().BeFalse();
@@ -126,7 +126,7 @@ public sealed class ConfigAutoStartTests
             vm.FilenameFormat = "Portable";
             await vm.SaveCommand.ExecuteAsync(null);
             config.Saved.Should().Be((true, "Portable"));
-            config.Current.AutoStart.Should().BeTrue();
+            config.Current.General.AutoStart.Should().BeTrue();
             service.Verify(s => s.SetEnabledAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>()), Times.Never);
         }, TestContext.Current.CancellationToken);
     }
@@ -148,9 +148,9 @@ public sealed class ConfigAutoStartTests
 
     private sealed class RecordingConfigService : IConfigService
     {
-        public QapptiaConfig Current { get; } = new() { SavePath = Path.GetTempPath() };
+        public QapptiaConfig Current { get; } = new() { General = { SavePath = Path.GetTempPath() } };
         public (bool AutoStart, string FilenameFormat)? Saved { get; private set; }
-        public void Save() => Saved = (Current.AutoStart, Current.FilenameFormat);
+        public void Save() => Saved = (Current.General.AutoStart, Current.General.FilenameFormat);
         public void Reload() => throw new NotSupportedException();
     }
 

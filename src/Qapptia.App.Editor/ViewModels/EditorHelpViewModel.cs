@@ -129,11 +129,11 @@ public partial class EditorHelpViewModel : ObservableObject
         DontShowAgainOnStartup = false;
 
         // Si estaba previamente suprimida, al abrir manualmente se reactiva la ayuda para el inicio
-        if (_configService.Current != null && !_configService.Current.ShowEditorHelpOnStartup)
+        if (_configService.Current != null && !_configService.Current.Editor.ShowEditorHelpOnStartup)
         {
             try
             {
-                _configService.Current.ShowEditorHelpOnStartup = true;
+                _configService.Current.Editor.ShowEditorHelpOnStartup = true;
                 _configService.Save();
             }
             catch
@@ -202,9 +202,9 @@ public partial class EditorHelpViewModel : ObservableObject
         {
             try
             {
-                if (_configService.Current.ShowEditorHelpOnStartup)
+                if (_configService.Current.Editor.ShowEditorHelpOnStartup)
                 {
-                    _configService.Current.ShowEditorHelpOnStartup = false;
+                    _configService.Current.Editor.ShowEditorHelpOnStartup = false;
                     _configService.Save();
                 }
             }
@@ -222,7 +222,7 @@ public partial class EditorHelpViewModel : ObservableObject
     /// </summary>
     public void RefreshShortcuts()
     {
-        var current = _configService.Current;
+        var current = _configService.Current?.Capture;
         ShortcutScreenText = FormatShortcut(current?.ShortcutScreen, "Ctrl + Shift + Q");
         ShortcutAreaText = FormatShortcut(current?.ShortcutArea, "Ctrl + Shift + A");
     }

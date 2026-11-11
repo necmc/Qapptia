@@ -98,7 +98,7 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
         });
 
         var state = _stateService.Load();
-        _activeFilePath = state.Session.LastSelectedFile;
+        _activeFilePath = GetRestorableFile(state.Session.LastSelectedFile);
         if (Enum.TryParse<SidebarViewMode>(state.Layout.SidebarViewMode, true, out var parsedMode))
         {
             _viewMode = parsedMode;
@@ -164,9 +164,8 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
 
         // Capturamos el archivo seleccionado antes de alternar
         var selectedFile = SelectedNode as FileItem;
-        var selectedPath = selectedFile?.FullPath ?? ActiveFilePath ?? _stateService.Load().Session.LastSelectedFile;
-
         var state = _stateService.Load();
+        var selectedPath = selectedFile?.FullPath ?? ActiveFilePath ?? GetRestorableFile(state.Session.LastSelectedFile);
         state.Layout.SidebarViewMode = mode.ToString();
         _stateService.Save(state);
 
@@ -615,10 +614,11 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
             }
 
             var state = _stateService.Load();
-            var selectedPath = (SelectedNode as FileItem)?.FullPath ?? ActiveFilePath ?? state.Session.LastSelectedFile;
+            var selectedPath = (SelectedNode as FileItem)?.FullPath ?? ActiveFilePath ?? GetRestorableFile(state.Session.LastSelectedFile);
 
             // FASE 1: Construcción paralela de topologías para habilitar Swap O(1) instantáneo
-            var effectiveExpandedFolders = new HashSet<string>(state.Layout.ExpandedFolders, StringComparer.OrdinalIgnoreCase);
+            var savedFolders = state.Layout.ExpandedFolders.Where(IsInCaptureDirectory).ToArray();
+            var effectiveExpandedFolders = new HashSet<string>(savedFolders, StringComparer.OrdinalIgnoreCase);
             var effectiveExpandedCalendar = new HashSet<string>(state.Layout.ExpandedCalendarGroups, StringComparer.OrdinalIgnoreCase);
 
             bool shouldExpandTreeAncestors = expandAncestorsForSelected || effectiveExpandedFolders.Count == 0;
@@ -757,7 +757,7 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
                 _ = Task.Run(() => _navigationService.RequestPriorityFolder(savePath));
             }
 
-            foreach (var folder in state.Layout.ExpandedFolders)
+            foreach (var folder in savedFolders)
             {
                 if (!string.Equals(NavigationService.NormalizePath(folder), NavigationService.NormalizePath(savePath), StringComparison.OrdinalIgnoreCase))
                 {
@@ -1064,6 +1064,24 @@ public partial class SidebarViewModel : ObservableObject, IDisposable
             {
                 chain[i].IsExpanded = true;
             }
+        }
+    }
+
+    private string? GetRestorableFile(string? path) => IsInCaptureDirectory(path) ? path : null;
+
+    private bool IsInCaptureDirectory(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(_savePath)) return false;
+
+        try
+        {
+            var relative = Path.GetRelativePath(_savePath, path);
+            return !Path.IsPathRooted(relative) && relative != ".." &&
+                !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal);
+        }
+        catch (ArgumentException)
+        {
+            return false;
         }
     }
 

@@ -38,7 +38,7 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _toastCts;
 
     public EditorHelpViewModel Help { get; }
-    public bool ShouldShowHelpOnStartup => _configService?.Current.ShowEditorHelpOnStartup ?? true;
+    public bool ShouldShowHelpOnStartup => _configService?.Current.Editor.ShowEditorHelpOnStartup ?? true;
 
     public string SponsorText => _sponsorVisual.Text;
     public string SponsorIconKey => _sponsorVisual.IconKey;
@@ -188,10 +188,9 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         Viewport = new CanvasViewportViewModel();
         Board = new CanvasBoardViewModel(canvasService, stateService, _dispatcher);
 
-        var initialState = stateService.Load();
-        if (!string.IsNullOrEmpty(initialState.Session.LastSelectedFile) && File.Exists(initialState.Session.LastSelectedFile))
+        var lastSelected = Sidebar.ActiveFilePath;
+        if (!string.IsNullOrEmpty(lastSelected) && File.Exists(lastSelected))
         {
-            var lastSelected = initialState.Session.LastSelectedFile;
             _ = Task.Run(async () =>
             {
                 try

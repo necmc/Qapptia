@@ -87,7 +87,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
     {
         _logger.Information("Refrescando tray, config y hotkeys");
         _config.Reload();
-        if (!_config.Current.ShowCaptureIndicator) _visualFeedback?.Dismiss();
+        if (!_config.Current.Capture.ShowCaptureIndicator) _visualFeedback?.Dismiss();
         UnregisterHotkeys();
         RegisterHotkeys();
         _trayService?.RefreshIcon();
@@ -100,7 +100,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
     private async Task QueueCaptureAsync(CaptureMode mode, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        var config = _config.Current;
+        var config = _config.Current.Capture;
         if (config.ManualTimer == 0) _visualFeedback?.Dismiss();
 
         await _channel.Writer.WriteAsync(new CaptureJob
@@ -169,7 +169,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
             catch (Exception ex) { _logger.Warning(ex, "No se pudo reproducir el sonido de captura."); }
         });
 
-        if (_visualFeedback != null && _config.Current.ShowCaptureIndicator && result.FeedbackTarget is { } target)
+        if (_visualFeedback != null && _config.Current.Capture.ShowCaptureIndicator && result.FeedbackTarget is { } target)
         {
             _visualFeedback.Enqueue(target);
         }
@@ -181,21 +181,21 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
     {
         try
         {
-            var screenShortcut = ParseShortcut(_config.Current.ShortcutScreen);
+            var screenShortcut = ParseShortcut(_config.Current.Capture.ShortcutScreen);
             if (screenShortcut is { } s)
                 _hotkeyScreen = _hotkeys.Register(s.Modifiers, s.Key, () =>
                 {
                     _ = HandleFullscreenCaptureAsync(CancellationToken.None);
                 });
 
-            var areaShortcut = ParseShortcut(_config.Current.ShortcutArea);
+            var areaShortcut = ParseShortcut(_config.Current.Capture.ShortcutArea);
             if (areaShortcut is { } a)
                 _hotkeyArea = _hotkeys.Register(a.Modifiers, a.Key, () =>
                 {
                     _ = HandleAreaCaptureAsync(CancellationToken.None);
                 });
 
-            var flowShortcut = ParseShortcut(_config.Current.ShortcutFlow);
+            var flowShortcut = ParseShortcut(_config.Current.Capture.ShortcutFlow);
             if (flowShortcut is { } f)
                 _hotkeyFlow = _hotkeys.Register(f.Modifiers, f.Key, () =>
                 {

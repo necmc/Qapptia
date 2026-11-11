@@ -16,9 +16,8 @@ public sealed class EditorHelpViewModelTests
     {
         _config = new QapptiaConfig
         {
-            ShortcutScreen = "ctrl+shift+q",
-            ShortcutArea = "ctrl+shift+a",
-            ShowEditorHelpOnStartup = true
+            Capture = { ShortcutScreen = "ctrl+shift+q", ShortcutArea = "ctrl+shift+a" },
+            Editor = { ShowEditorHelpOnStartup = true }
         };
 
         _configServiceMock = new Mock<IConfigService>();
@@ -71,8 +70,8 @@ public sealed class EditorHelpViewModelTests
         vm.CurrentSlideIndex = 3;
 
         // Modificamos atajos en config para simular cambio externo
-        _config.ShortcutScreen = "ctrl+alt+s";
-        _config.ShortcutArea = "ctrl+alt+w";
+        _config.Capture.ShortcutScreen = "ctrl+alt+s";
+        _config.Capture.ShortcutArea = "ctrl+alt+w";
 
         // Act
         vm.OpenCommand.Execute(null);
@@ -196,7 +195,7 @@ public sealed class EditorHelpViewModelTests
 
         // Assert
         vm.IsVisible.Should().BeFalse();
-        _config.ShowEditorHelpOnStartup.Should().BeTrue();
+        _config.Editor.ShowEditorHelpOnStartup.Should().BeTrue();
         _configServiceMock.Verify(c => c.Save(), Times.Never);
     }
 
@@ -213,7 +212,7 @@ public sealed class EditorHelpViewModelTests
 
         // Assert
         vm.IsVisible.Should().BeFalse();
-        _config.ShowEditorHelpOnStartup.Should().BeFalse();
+        _config.Editor.ShowEditorHelpOnStartup.Should().BeFalse();
         _configServiceMock.Verify(c => c.Save(), Times.Once);
     }
 
@@ -221,7 +220,7 @@ public sealed class EditorHelpViewModelTests
     public void OpeningHelpManuallyWhenPreviouslySuppressedShouldResetCheckboxAndReactivateStartup()
     {
         // Arrange: la ayuda estaba previamente suprimida para el arranque
-        _config.ShowEditorHelpOnStartup = false;
+        _config.Editor.ShowEditorHelpOnStartup = false;
         var vm = new EditorHelpViewModel(_configServiceMock.Object);
 
         // Act: se abre manualmente (desde "Acerca de" o menú)
@@ -230,18 +229,18 @@ public sealed class EditorHelpViewModelTests
         // Assert: la casilla aparece desmarcada y se reactiva la persistencia en config
         vm.IsVisible.Should().BeTrue();
         vm.DontShowAgainOnStartup.Should().BeFalse("la casilla debe aparecer desactivada al abrir manualmente");
-        _config.ShowEditorHelpOnStartup.Should().BeTrue("debe reactivarse para que vuelva a mostrarse al iniciar a menos que el usuario vuelva a marcar");
+        _config.Editor.ShowEditorHelpOnStartup.Should().BeTrue("debe reactivarse para que vuelva a mostrarse al iniciar a menos que el usuario vuelva a marcar");
         _configServiceMock.Verify(c => c.Save(), Times.Once);
 
         // Act 2: si el usuario simplemente cierra sin marcar, permanece reactivada
         vm.CloseCommand.Execute(null);
-        _config.ShowEditorHelpOnStartup.Should().BeTrue();
+        _config.Editor.ShowEditorHelpOnStartup.Should().BeTrue();
 
         // Act 3: si el usuario vuelve a abrir, marca la casilla y cierra, se vuelve a suprimir
         vm.OpenCommand.Execute(null);
         vm.DontShowAgainOnStartup = true;
         vm.CloseCommand.Execute(null);
-        _config.ShowEditorHelpOnStartup.Should().BeFalse();
+        _config.Editor.ShowEditorHelpOnStartup.Should().BeFalse();
     }
 }
 

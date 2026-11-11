@@ -1,14 +1,11 @@
-using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Serilog;
 
-
 namespace Qapptia.Core.Configuration;
 
 /// <summary>
-/// Implementacion basada en config.json junto al exe (portable).
-/// Formato flat snake_case compatible con el Python legacy.
+/// Persiste las preferencias agrupadas en global_config.json.
 /// </summary>
 public sealed class JsonConfigService : IConfigService
 {
@@ -69,7 +66,7 @@ public sealed class JsonConfigService : IConfigService
     {
         if (!File.Exists(path))
         {
-            _logger.Information("config.json no existe en {Path}; usando defaults", path);
+            _logger.Information("No se encontró la configuración en {Path}. Se usarán los valores predeterminados", path);
             return new QapptiaConfig();
         }
 
@@ -77,9 +74,9 @@ public sealed class JsonConfigService : IConfigService
         {
             var json = File.ReadAllText(path);
             var config = JsonSerializer.Deserialize(json, s_context.QapptiaConfig);
-            if (config is null)
+            if (config is null || config.General is null || config.Capture is null || config.Editor is null)
             {
-                _logger.Warning("config.json vacio o invalido en {Path}; usando defaults", path);
+                _logger.Warning("Configuración vacía o inválida en {Path}. Se usarán los valores predeterminados", path);
                 return new QapptiaConfig();
             }
             _logger.Information("Config cargado desde {Path}", path);
@@ -87,7 +84,7 @@ public sealed class JsonConfigService : IConfigService
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Error leyendo config.json desde {Path}; usando defaults", path);
+            _logger.Error(ex, "Error al leer la configuración en {Path}. Se usarán los valores predeterminados", path);
             return new QapptiaConfig();
         }
     }

@@ -75,7 +75,7 @@ public sealed class AvaloniaCaptureVisualFeedback(
 
     private void StartOnUiThread(long revision, CaptureFeedbackTarget target, long queuedAt)
     {
-        if (_disposed || _disabled || !config.Current.ShowCaptureIndicator || !IsCurrent(revision)) return;
+        if (_disposed || _disabled || !config.Current.Capture.ShowCaptureIndicator || !IsCurrent(revision)) return;
 
         try
         {
@@ -84,7 +84,7 @@ public sealed class AvaloniaCaptureVisualFeedback(
             var display = surface.GetDisplays().FirstOrDefault(candidate => candidate.Id == selected.Id);
             if (display.Bounds.Width <= 0 || display.Bounds.Height <= 0) return;
 
-            _palette = CaptureIndicatorArtwork.GetPalette(config.Current.Theme);
+            _palette = CaptureIndicatorArtwork.GetPalette(config.Current.General.Theme);
             int width = Math.Clamp((int)Math.Round(CaptureIndicatorArtwork.Width * display.Scale), 1, display.Bounds.Width);
             int height = Math.Clamp((int)Math.Round(CaptureIndicatorArtwork.Height * display.Scale), 1, display.Bounds.Height);
             if (_artwork?.PixelWidth != width || _artwork.PixelHeight != height)

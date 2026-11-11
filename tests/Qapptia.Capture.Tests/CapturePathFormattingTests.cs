@@ -37,10 +37,13 @@ public sealed class CapturePathFormattingTests
         var tempDir = Path.Combine(Path.GetTempPath(), "QapptiaTest_" + Guid.NewGuid().ToString("N"));
         var config = new QapptiaConfig
         {
-            SavePath = tempDir,
-            SubfolderMonth = true,
-            SubfolderDay = true,
-            SubfolderHour = true
+            General =
+            {
+                SavePath = tempDir,
+                SubfolderMonth = true,
+                SubfolderDay = true,
+                SubfolderHour = true
+            }
         };
         var service = CreateService(config);
         var testTime = new DateTime(2026, 9, 21, 0, 15, 30);
@@ -58,10 +61,13 @@ public sealed class CapturePathFormattingTests
         var tempDir = Path.Combine(Path.GetTempPath(), "QapptiaTest_" + Guid.NewGuid().ToString("N"));
         var config = new QapptiaConfig
         {
-            SavePath = tempDir,
-            SubfolderMonth = true,
-            SubfolderDay = true,
-            SubfolderHour = true
+            General =
+            {
+                SavePath = tempDir,
+                SubfolderMonth = true,
+                SubfolderDay = true,
+                SubfolderHour = true
+            }
         };
         var service = CreateService(config);
         var testTime = new DateTime(2026, 9, 21, 8, 45, 0);
@@ -79,10 +85,13 @@ public sealed class CapturePathFormattingTests
         var tempDir = Path.Combine(Path.GetTempPath(), "QapptiaTest_" + Guid.NewGuid().ToString("N"));
         var config = new QapptiaConfig
         {
-            SavePath = tempDir,
-            SubfolderMonth = true,
-            SubfolderDay = true,
-            SubfolderHour = true
+            General =
+            {
+                SavePath = tempDir,
+                SubfolderMonth = true,
+                SubfolderDay = true,
+                SubfolderHour = true
+            }
         };
         var service = CreateService(config);
         var testTime = new DateTime(2026, 9, 21, 22, 10, 5);
@@ -100,10 +109,13 @@ public sealed class CapturePathFormattingTests
         var tempDir = Path.Combine(Path.GetTempPath(), "QapptiaTest_" + Guid.NewGuid().ToString("N"));
         var config = new QapptiaConfig
         {
-            SavePath = tempDir,
-            SubfolderMonth = true,
-            SubfolderDay = true,
-            SubfolderHour = false
+            General =
+            {
+                SavePath = tempDir,
+                SubfolderMonth = true,
+                SubfolderDay = true,
+                SubfolderHour = false
+            }
         };
         var service = CreateService(config);
         var testTime = new DateTime(2026, 9, 21, 14, 0, 0);
@@ -123,11 +135,14 @@ public sealed class CapturePathFormattingTests
         var tempDir = Path.Combine(Path.GetTempPath(), "QapptiaTest_" + Guid.NewGuid().ToString("N"));
         var config = new QapptiaConfig
         {
-            SavePath = tempDir,
-            FilenameFormat = blankFormat!,
-            SubfolderMonth = false,
-            SubfolderDay = false,
-            SubfolderHour = false
+            General =
+            {
+                SavePath = tempDir,
+                FilenameFormat = blankFormat!,
+                SubfolderMonth = false,
+                SubfolderDay = false,
+                SubfolderHour = false
+            }
         };
         var service = CreateService(config);
         var testTime = new DateTime(2026, 9, 21, 11, 8, 30);
@@ -146,11 +161,14 @@ public sealed class CapturePathFormattingTests
         {
             var config = new QapptiaConfig
             {
-                SavePath = tempDir,
-                FilenameFormat = "CustomTest",
-                SubfolderMonth = false,
-                SubfolderDay = false,
-                SubfolderHour = false
+                General =
+                {
+                    SavePath = tempDir,
+                    FilenameFormat = "CustomTest",
+                    SubfolderMonth = false,
+                    SubfolderDay = false,
+                    SubfolderHour = false
+                }
             };
             var service = CreateService(config);
 

@@ -204,12 +204,8 @@ public sealed class Program
 
         services.AddSingleton<IEditorStateService>(sp =>
         {
-            var config = sp.GetRequiredService<IConfigService>();
-            var savePath = string.IsNullOrWhiteSpace(config.Current.SavePath)
-                ? Qapptia.Core.Constants.DefaultSavePath
-                : config.Current.SavePath;
             var logger = sp.GetRequiredService<Serilog.ILogger>().ForContext<EditorStateService>();
-            return new EditorStateService(savePath, Qapptia.Core.Constants.EditorStateFileName, logger);
+            return new EditorStateService(Qapptia.Core.Constants.DefaultConfigDirectory, Qapptia.Core.Constants.EditorStateFileName, logger);
         });
 
         services.AddSingleton<ICaptureAppService>(sp =>
@@ -222,9 +218,10 @@ public sealed class Program
         services.AddTransient<EditorViewModel>(sp =>
         {
             var config = sp.GetRequiredService<IConfigService>();
-            var savePath = string.IsNullOrWhiteSpace(config.Current.SavePath)
+            var configuredSavePath = config.Current.General.SavePath;
+            var savePath = string.IsNullOrWhiteSpace(configuredSavePath)
                 ? Qapptia.Core.Constants.DefaultSavePath
-                : config.Current.SavePath;
+                : configuredSavePath;
 
             return new EditorViewModel(
                 sp.GetRequiredService<IEditorStateService>(),

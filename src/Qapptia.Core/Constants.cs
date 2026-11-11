@@ -8,7 +8,7 @@ public static class Constants
     public const string AppName = "Qapptia";
     public static string AppVersion { get; } = typeof(Constants).Assembly
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion.Split('+')[0];
-    public const string ConfigFileName = "config.json";
+    public const string ConfigFileName = "global_config.json";
     public const string EditorStateFileName = "editor_state.json";
     public const string ShortcutCopyClipboard = "Ctrl+C";
     public const string ShortcutCopyFile = "Ctrl+F";
@@ -119,17 +119,14 @@ public static class Constants
     // Intervalo entre descargas solicitadas por el usuario
     public const int UpdateDownloadCooldownMs = 2000;
 
+    public static string DefaultConfigPath => Path.Combine(DefaultConfigDirectory, ConfigFileName);
+
+    public static string DefaultLogDirectory => DefaultConfigDirectory;
+
 #if DEBUG
-    public static string DefaultConfigPath => Path.Combine(AppContext.BaseDirectory, ConfigFileName);
-
-    public static string DefaultLogDirectory => AppContext.BaseDirectory;
+    public static string DefaultConfigDirectory => AppContext.BaseDirectory;
 #else
-    public static string DefaultConfigPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        AppName, 
-        ConfigFileName);
-
-    public static string DefaultLogDirectory => Path.Combine(
+    public static string DefaultConfigDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         AppName);
 #endif

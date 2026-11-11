@@ -17,7 +17,7 @@ public partial class App : Application
 
         var configPath = Constants.DefaultConfigPath;
         _configService = new JsonConfigService(configPath);
-        RequestedThemeVariant = ThemeManager.GetThemeVariant(_configService.Current.Theme);
+        RequestedThemeVariant = ThemeManager.GetThemeVariant(_configService.Current.General.Theme);
     }
 
     public override void OnFrameworkInitializationCompleted()

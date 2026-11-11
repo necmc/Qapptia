@@ -229,13 +229,13 @@ public class LauncherTests
     [Fact]
     public void QapptiaConfigAutoStartSerializationRoundtrip()
     {
-        var config = new Qapptia.Core.Configuration.QapptiaConfig { AutoStart = true };
+        var config = new Qapptia.Core.Configuration.QapptiaConfig { General = { AutoStart = true } };
         string json = System.Text.Json.JsonSerializer.Serialize(config);
         Assert.Contains("\"auto_start\":true", json);
 
         var deserialized = System.Text.Json.JsonSerializer.Deserialize<Qapptia.Core.Configuration.QapptiaConfig>(json);
         Assert.NotNull(deserialized);
-        Assert.True(deserialized.AutoStart);
+        Assert.True(deserialized.General.AutoStart);
     }
 
     private sealed class FakeProcessLauncher : IProcessLauncher

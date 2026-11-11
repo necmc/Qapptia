@@ -163,21 +163,21 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     {
         var config = _settingsService.Current;
         AutoStart = false;
-        SelectedTheme = ConfigPresentation.ToThemeName(config.Theme);
-        SavePath = config.SavePath;
-        FilenameFormat = config.FilenameFormat;
-        SubfolderMonth = config.SubfolderMonth;
-        SubfolderDay = config.SubfolderDay;
-        SubfolderHour = config.SubfolderHour;
-        ShowMouse = config.ShowMouse;
-        HighlightMouse = config.HighlightMouse;
-        ManualTimer = config.ManualTimer;
-        ShortcutScreen = config.ShortcutScreen;
-        ShortcutArea = config.ShortcutArea;
-        CopyToClipboardScreen = config.CopyToClipboardScreen;
-        CopyToClipboardArea = config.CopyToClipboardArea;
-        CaptureAllScreens = config.CaptureAllScreens;
-        ShowCaptureIndicator = config.ShowCaptureIndicator;
+        SelectedTheme = ConfigPresentation.ToThemeName(config.General.Theme);
+        SavePath = config.General.SavePath;
+        FilenameFormat = config.General.FilenameFormat;
+        SubfolderMonth = config.General.SubfolderMonth;
+        SubfolderDay = config.General.SubfolderDay;
+        SubfolderHour = config.General.SubfolderHour;
+        ShowMouse = config.Capture.ShowMouse;
+        HighlightMouse = config.Capture.HighlightMouse;
+        ManualTimer = config.Capture.ManualTimer;
+        ShortcutScreen = config.Capture.ShortcutScreen;
+        ShortcutArea = config.Capture.ShortcutArea;
+        CopyToClipboardScreen = config.Capture.CopyToClipboardScreen;
+        CopyToClipboardArea = config.Capture.CopyToClipboardArea;
+        CaptureAllScreens = config.Capture.CaptureAllScreens;
+        ShowCaptureIndicator = config.Capture.ShowCaptureIndicator;
 
         LoadAutoStartFromSystem();
     }

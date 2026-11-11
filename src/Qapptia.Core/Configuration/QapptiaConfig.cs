@@ -3,22 +3,21 @@ using System.Text.Json.Serialization;
 namespace Qapptia.Core.Configuration;
 
 /// <summary>
-/// Configuracion raiz de Qapptia. Estructura flat compatible con config.json
-/// del Python legacy. Se organiza internamente con partial class por categorias.
-/// </span>
+/// Configuración de Qapptia agrupada por función.
 /// </summary>
-public sealed partial class QapptiaConfig
+public sealed class QapptiaConfig
 {
-    /// <summary>
-    /// Version del esquema (para migraciones futuras). Se escribira solo si
-    /// difiere del default.
-    /// </summary>
-    [JsonPropertyName("config_version")]
-    public int ConfigVersion { get; set; } = 1;
+    private const int SchemaVersion = 1;
 
-    [JsonPropertyName("theme")]
-    public string Theme { get; set; } = global::Qapptia.Core.Theme.ThemeConstants.System;
+    [JsonPropertyName("version")]
+    public int Version { get; } = SchemaVersion;
 
-    [JsonPropertyName("auto_start")]
-    public bool AutoStart { get; set; } = false;
+    [JsonPropertyName("general")]
+    public GeneralConfig General { get; set; } = new();
+
+    [JsonPropertyName("capture")]
+    public CaptureConfig Capture { get; set; } = new();
+
+    [JsonPropertyName("editor")]
+    public EditorConfig Editor { get; set; } = new();
 }

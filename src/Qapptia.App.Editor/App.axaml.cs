@@ -19,7 +19,7 @@ public partial class App : Application
 
         var configService = Services?.GetService<IConfigService>()
             ?? new JsonConfigService(Qapptia.Core.Constants.DefaultConfigPath);
-        RequestedThemeVariant = ThemeManager.GetThemeVariant(configService.Current.Theme);
+        RequestedThemeVariant = ThemeManager.GetThemeVariant(configService.Current.General.Theme);
     }
 
     public override void OnFrameworkInitializationCompleted()

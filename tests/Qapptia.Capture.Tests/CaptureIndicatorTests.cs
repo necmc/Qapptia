@@ -97,7 +97,7 @@ public sealed class CaptureIndicatorTests
         int soundCount = 0;
         int visualCount = 0;
         var config = new Mock<IConfigService>();
-        config.SetupGet(c => c.Current).Returns(new QapptiaConfig { ShowCaptureIndicator = enabled });
+        config.SetupGet(c => c.Current).Returns(new QapptiaConfig { Capture = { ShowCaptureIndicator = enabled } });
         var screen = new Mock<IFullscreenCaptureService>();
         screen.Setup(s => s.CaptureAsync(It.IsAny<CaptureJob>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CaptureResult("capture.png", [], 1920, 1080) { FeedbackTarget = target });

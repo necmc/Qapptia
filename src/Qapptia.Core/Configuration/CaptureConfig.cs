@@ -4,29 +4,10 @@ using System.Text.Json.Serialization;
 namespace Qapptia.Core.Configuration;
 
 /// <summary>
-/// Seccion: captura de pantalla y atajos.
+/// Preferencias de captura de pantalla y atajos.
 /// </summary>
-public sealed partial class QapptiaConfig
+public sealed class CaptureConfig
 {
-    // === Guardado ===
-
-    [JsonPropertyName("save_path")]
-    [Required]
-    public string SavePath { get; set; } = Qapptia.Core.Constants.DefaultSavePath;
-
-    [JsonPropertyName("filename_format")]
-    [Required]
-    public string FilenameFormat { get; set; } = Qapptia.Core.Constants.DefaultFilenameFormat;
-
-    [JsonPropertyName("subfolder_month")]
-    public bool SubfolderMonth { get; set; } = true;
-
-    [JsonPropertyName("subfolder_day")]
-    public bool SubfolderDay { get; set; } = true;
-
-    [JsonPropertyName("subfolder_hour")]
-    public bool SubfolderHour { get; set; } = false;
-
     // === Cursor ===
 
     [JsonPropertyName("show_mouse")]
@@ -35,7 +16,7 @@ public sealed partial class QapptiaConfig
     [JsonPropertyName("highlight_mouse")]
     public bool HighlightMouse { get; set; } = false;
 
-    // === Timer ===
+    // === Temporizador ===
 
     [JsonPropertyName("manual_timer")]
     [Range(0, 999)]
@@ -71,7 +52,7 @@ public sealed partial class QapptiaConfig
     [JsonPropertyName("show_capture_indicator")]
     public bool ShowCaptureIndicator { get; set; } = true;
 
-    // === Scroll capture (omitido en esta migracion, conservado por compat) ===
+    // === Captura con desplazamiento ===
 
     [JsonPropertyName("enable_scroll_capture")]
     public bool EnableScrollCapture { get; set; } = false;

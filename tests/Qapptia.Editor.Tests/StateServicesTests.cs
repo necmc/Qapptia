@@ -29,7 +29,7 @@ public sealed class StateServicesTests : IDisposable
     {
         _testDir = Path.Combine(Path.GetTempPath(), "Qapptia_StateTests_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_testDir);
-        _editorStateService = new EditorStateService(_testDir, "editor_state.json");
+        _editorStateService = new EditorStateService(_testDir, Qapptia.Core.Constants.EditorStateFileName);
         _canvasStateService = new CanvasStateService();
     }
 
@@ -55,7 +55,7 @@ public sealed class StateServicesTests : IDisposable
 
         _editorStateService.Save(state);
 
-        var loaded = _editorStateService.Load();
+        var loaded = new EditorStateService(_testDir, Qapptia.Core.Constants.EditorStateFileName).Load();
         loaded.Layout.SidebarWidth.Should().Be(320);
         loaded.Tools.ActiveTool.Should().Be("Rectangle");
         loaded.Palette.ActiveFavoriteColor.Should().Be("#FF0000");

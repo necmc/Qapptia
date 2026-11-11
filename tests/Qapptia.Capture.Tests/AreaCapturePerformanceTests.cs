@@ -33,11 +33,14 @@ public sealed class AreaCapturePerformanceTests : IDisposable
 
         var appConfig = new QapptiaConfig
         {
-            ShowMouse = true,
-            HighlightMouse = false,
-            CaptureAllScreens = false,
-            CopyToClipboardArea = false,
-            SavePath = _tempDir
+            General = { SavePath = _tempDir },
+            Capture =
+            {
+                ShowMouse = true,
+                HighlightMouse = false,
+                CaptureAllScreens = false,
+                CopyToClipboardArea = false
+            }
         };
         _configMock.Setup(c => c.Current).Returns(appConfig);
     }

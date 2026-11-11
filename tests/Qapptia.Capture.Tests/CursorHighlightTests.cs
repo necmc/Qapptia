@@ -61,8 +61,11 @@ public sealed class CursorHighlightTests
 
         var config = new QapptiaConfig
         {
-            ShowMouse = true,
-            HighlightMouse = true
+            Capture =
+            {
+                ShowMouse = true,
+                HighlightMouse = true
+            }
         };
         _configMock.Setup(c => c.Current).Returns(config);
 

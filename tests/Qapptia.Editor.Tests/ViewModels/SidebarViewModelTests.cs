@@ -190,7 +190,8 @@ public sealed class SidebarViewModelTests : IDisposable
         var mockNav = new Mock<INavigationService>();
         var state = _stateService.Load();
         state.Layout.SidebarViewMode = "Tree";
-        state.Session.LastSelectedFile = "C:/fake/path.png";
+        var persistedPath = Path.Combine(_testDir, "path.png");
+        state.Session.LastSelectedFile = persistedPath;
         _stateService.Save(state);
 
         using var sut = CreateViewModel(mockNav.Object);
@@ -207,10 +208,33 @@ public sealed class SidebarViewModelTests : IDisposable
 
         capturedCallback.Should().NotBeNull("El callback de late binding debe haber sido inyectado");
 
-        var incomingFile = new FileItem { FullPath = "C:/fake/path.png" };
+        var incomingFile = new FileItem { FullPath = persistedPath };
         capturedCallback!(incomingFile);
 
         sut.SelectedNode.Should().Be(incomingFile, "El late binding debe haber atrapado el archivo entrante");
+    }
+
+    [Fact]
+    public async Task LoadSidebarImagesAsyncSkipsPersistedPathsOutsideCaptureDirectory()
+    {
+        var previousDirectory = _testDir + "-previous";
+        var previousPath = NavigationService.NormalizePath(previousDirectory);
+        var state = _stateService.Load();
+        state.Session.LastSelectedFile = Path.Combine(previousDirectory, "previous.png");
+        state.Layout.ExpandedFolders.Add(previousPath);
+        _stateService.Save(state);
+
+        var mockNav = new Mock<INavigationService>();
+        mockNav.Setup(m => m.BuildTreeAsync(It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FolderItem { Name = "Root" });
+        mockNav.Setup(m => m.BuildCalendarTreeAsync(It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<string>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<GroupItem>());
+
+        using var sut = CreateViewModel(mockNav.Object);
+        await sut.LoadSidebarImagesAsync();
+
+        sut.ActiveFilePath.Should().BeNull();
+        mockNav.Verify(m => m.BuildTreeAsync(_testDir, It.Is<IReadOnlyList<string>>(paths => paths.Count == 0), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

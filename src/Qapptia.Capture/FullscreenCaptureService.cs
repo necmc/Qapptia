@@ -45,7 +45,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
             new SKImageInfo(screen.Width, screen.Height, SKColorType.Bgra8888, SKAlphaType.Unpremul),
             new IntPtr(Marshal.UnsafeAddrOfPinnedArrayElement(screen.BgraPixels, 0))));
 
-        if (job.IncludeCursor && _config.Current.ShowMouse)
+        if (job.IncludeCursor && _config.Current.Capture.ShowMouse)
         {
             await OverlayCursorAsync(image, screen.OriginX, screen.OriginY, ct);
         }
@@ -59,7 +59,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
     {
         var screen = await ReadScreenAsync(ct);
 
-        if (includeCursor && _config.Current.ShowMouse)
+        if (includeCursor && _config.Current.Capture.ShowMouse)
         {
             using var bitmap = new SKBitmap();
             bitmap.InstallPixels(
@@ -92,10 +92,10 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
     private async Task<ScreenCaptureResult> ReadScreenAsync(CancellationToken ct)
     {
         if (_visualFeedback == null)
-            return await _screenCapture.CaptureScreenAsync(_config.Current.CaptureAllScreens, ct);
+            return await _screenCapture.CaptureScreenAsync(_config.Current.Capture.CaptureAllScreens, ct);
 
         await _visualFeedback.HideBeforeCaptureAsync(ct);
-        var config = _config.Current;
+        var config = _config.Current.Capture;
         var displays = config.ShowCaptureIndicator ? _visualFeedback.GetDisplays() : [];
         var screen = await _screenCapture.CaptureScreenAsync(config.CaptureAllScreens, ct);
         return screen with { DisplaysAtCapture = displays };
@@ -121,7 +121,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
 
             using var canvas = new SKCanvas(bitmap);
 
-            if (_config.Current.HighlightMouse)
+            if (_config.Current.Capture.HighlightMouse)
             {
                 var center = new SKPoint(cursorX - originX, cursorY - originY);
                 var radius = Math.Max(cursor.Width, cursor.Height) * 0.65f + 8f;
@@ -159,8 +159,8 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
 
         await File.WriteAllBytesAsync(path, finalBytes, ct);
 
-        if (job.Mode == CaptureMode.Fullscreen && _config.Current.CopyToClipboardScreen ||
-            job.Mode == CaptureMode.Area && _config.Current.CopyToClipboardArea)
+        if (job.Mode == CaptureMode.Fullscreen && _config.Current.Capture.CopyToClipboardScreen ||
+            job.Mode == CaptureMode.Area && _config.Current.Capture.CopyToClipboardArea)
         {
             try
             { await _clipboard.SetImageAsync(finalBytes, ct); }
@@ -176,7 +176,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
 
     internal string BuildFilePath(DateTime? timestamp = null)
     {
-        var cfg = _config.Current;
+        var cfg = _config.Current.General;
         string baseDir = string.IsNullOrWhiteSpace(cfg.SavePath)
             ? Qapptia.Core.Constants.DefaultSavePath
             : cfg.SavePath;

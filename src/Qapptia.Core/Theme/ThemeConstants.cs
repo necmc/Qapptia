@@ -2,7 +2,7 @@ namespace Qapptia.Core.Theme;
 
 public static class ThemeConstants
 {
-    // Códigos internos persistidos en config.json
+    // Códigos internos persistidos en global_config.json
     public const string Dark = "dark";
     public const string Light = "light";
     public const string System = "system";
