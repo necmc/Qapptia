@@ -13,7 +13,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
     private readonly ICursorCapture _cursorCapture;
     private readonly IClipboardService _clipboard;
     private readonly IDesktopService _desktop;
-    private readonly IConfigService _config;
+    private readonly IConfigReader _config;
     private readonly ILogger _logger;
     private readonly ICaptureVisualFeedback? _visualFeedback;
 
@@ -22,7 +22,7 @@ public sealed class FullscreenCaptureService : IFullscreenCaptureService
         ICursorCapture cursorCapture,
         IClipboardService clipboard,
         IDesktopService desktop,
-        IConfigService config,
+        IConfigReader config,
         ILogger logger,
         ICaptureVisualFeedback? visualFeedback = null)
     {

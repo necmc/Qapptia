@@ -17,7 +17,7 @@ public partial class App : Application
     {
         AvaloniaXamlLoader.Load(this);
 
-        var configService = Services?.GetService<IConfigService>()
+        var configService = Services?.GetService<IConfigReader>()
             ?? new JsonConfigService(Qapptia.Core.Constants.DefaultConfigPath);
         RequestedThemeVariant = ThemeManager.GetThemeVariant(configService.Current.General.Theme);
     }

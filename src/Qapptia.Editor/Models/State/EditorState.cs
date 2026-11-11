@@ -22,6 +22,9 @@ public sealed class SessionState
 {
     [JsonPropertyName("last_selected_file")]
     public string? LastSelectedFile { get; set; }
+
+    [JsonPropertyName("show_editor_help_on_startup")]
+    public bool ShowEditorHelpOnStartup { get; set; } = true;
 }
 
 public sealed class ToolsState

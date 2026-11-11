@@ -12,7 +12,6 @@ public sealed class ConfigSettingsServiceTests
     public void SavePreservesUneditedPreferencesAndAppliesCaptureRules()
     {
         var config = new MemoryConfigService();
-        config.Current.Editor.ShowEditorHelpOnStartup = false;
         config.Current.Capture.ShortcutFlow = "alt+f";
         var processes = new RecordingProcesses();
         var service = new ConfigSettingsService(config, new FakeAutoStart(), processes);
@@ -30,7 +29,6 @@ public sealed class ConfigSettingsServiceTests
         Assert.Equal(Constants.DefaultFilenameFormat, config.Current.General.FilenameFormat);
         Assert.Equal(Constants.DefaultShortcutScreen, config.Current.Capture.ShortcutScreen);
         Assert.Equal(Constants.DefaultShortcutArea, config.Current.Capture.ShortcutArea);
-        Assert.False(config.Current.Editor.ShowEditorHelpOnStartup);
         Assert.False(config.Current.Capture.ShowCaptureIndicator);
         Assert.Equal("alt+f", config.Current.Capture.ShortcutFlow);
         Assert.Equal(1, config.SaveCount);
@@ -64,11 +62,9 @@ public sealed class ConfigSettingsServiceTests
             Assert.Equal("global_config.json", Path.GetFileName(path));
             Assert.Equal(ThemeConstants.System, service.Current.General.Theme);
             Assert.Equal(0, service.Current.Capture.ManualTimer);
-            Assert.True(service.Current.Editor.ShowEditorHelpOnStartup);
 
             service.Current.General.Theme = ThemeConstants.Dark;
             service.Current.Capture.ManualTimer = 3;
-            service.Current.Editor.ShowEditorHelpOnStartup = false;
             service.Save();
 
             using var json = JsonDocument.Parse(File.ReadAllText(path));
@@ -87,24 +83,76 @@ public sealed class ConfigSettingsServiceTests
                 "copy_to_clipboard_area", "capture_all_screens", "show_capture_indicator", "enable_scroll_capture");
             Assert.Equal(3, capture.GetProperty("manual_timer").GetInt32());
 
-            var editor = root.GetProperty("editor");
-            AssertJsonProperties(editor, "show_editor_help_on_startup");
-            Assert.False(editor.GetProperty("show_editor_help_on_startup").GetBoolean());
+            AssertJsonProperties(root.GetProperty("editor"));
 
             service.Current.General.Theme = ThemeConstants.System;
             service.Current.Capture.ManualTimer = 0;
-            service.Current.Editor.ShowEditorHelpOnStartup = true;
             service.Reload();
 
             Assert.Equal(ThemeConstants.Dark, service.Current.General.Theme);
             Assert.Equal(3, service.Current.Capture.ManualTimer);
-            Assert.False(service.Current.Editor.ShowEditorHelpOnStartup);
             Assert.Equal(oldJson, File.ReadAllText(oldPath));
         }
         finally
         {
             directory.Delete(recursive: true);
         }
+    }
+
+    [Fact]
+    public void GlobalConfigPublishesACompleteDocumentAndPreservesThePreviousOneWhileBlocked()
+    {
+        var directory = Directory.CreateTempSubdirectory("Qapptia_Config_");
+        try
+        {
+            var path = Path.Combine(directory.FullName, Constants.ConfigFileName);
+            var service = new JsonConfigService(path);
+            service.Current.General.Theme = ThemeConstants.Light;
+            service.Save();
+            var previousJson = File.ReadAllText(path);
+            service.Current.General.Theme = ThemeConstants.Dark;
+
+            using (var reader = File.OpenRead(path))
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    var error = Record.Exception(service.Save);
+                    Assert.True(error is IOException or UnauthorizedAccessException);
+                    Assert.Equal(previousJson, File.ReadAllText(path));
+                    Assert.Empty(directory.EnumerateFiles("*.tmp"));
+                }
+                else
+                {
+                    service.Save();
+                    using var previous = new StreamReader(reader);
+                    Assert.Equal(previousJson, previous.ReadToEnd());
+                    Assert.Equal(ThemeConstants.Dark, new JsonConfigService(path).Current.General.Theme);
+                }
+            }
+
+            service.Save();
+            Assert.Equal(ThemeConstants.Dark, new JsonConfigService(path).Current.General.Theme);
+            Assert.Empty(directory.EnumerateFiles("*.tmp"));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void SaveNotifiesAfterPersistingPreferencesWhileAutoStartChangeIsPending()
+    {
+        var config = new MemoryConfigService();
+        var processes = new RecordingProcesses(() => Assert.Equal(1, config.SaveCount));
+        var service = new ConfigSettingsService(config, new FakeAutoStart(), processes);
+        var initial = new AutoStartState(AutoStartScope.CurrentUser, false);
+
+        var saved = service.SavePreferences(Changes(), initial, requestedAutoStart: true);
+
+        Assert.True(saved.IsValid);
+        Assert.True(saved.ChangeAutoStart);
+        Assert.Equal(ThemeConstants.Dark, processes.Theme);
     }
 
     [Fact]
@@ -147,10 +195,14 @@ public sealed class ConfigSettingsServiceTests
         public bool SetAutoStartEnabled(bool enabled) => false;
     }
 
-    private sealed class RecordingProcesses : IConfigProcessService
+    private sealed class RecordingProcesses(Action? onNotify = null) : IConfigProcessService
     {
         public string? Theme { get; private set; }
-        public void NotifyPreferencesChanged(string theme) => Theme = theme;
+        public void NotifyPreferencesChanged(string theme)
+        {
+            Theme = theme;
+            onNotify?.Invoke();
+        }
         public void PublishUpdate(ReleaseInfoDto? release) { }
         public Task<bool> OpenEditorHelpAsync(CancellationToken cancellationToken = default) => Task.FromResult(false);
     }

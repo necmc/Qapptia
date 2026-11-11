@@ -9,6 +9,12 @@ namespace Qapptia.Core.Configuration;
 /// </summary>
 public sealed class JsonConfigService : IConfigService
 {
+    private const int ReplaceRetryCount = 3;
+    private const int ReplaceRetryDelayMs = 25;
+    private const int WindowsAccessDenied = unchecked((int)0x80070005);
+    private const int WindowsSharingViolation = unchecked((int)0x80070020);
+    private const int WindowsLockViolation = unchecked((int)0x80070021);
+
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {
         WriteIndented = true,
@@ -38,17 +44,63 @@ public sealed class JsonConfigService : IConfigService
         {
             try
             {
-                var dir = Path.GetDirectoryName(_path);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-
-                var json = JsonSerializer.Serialize(_current, s_context.QapptiaConfig);
-                File.WriteAllText(_path, json);
+                SaveAtomically();
                 _logger.Information("Config guardado en {Path}", _path);
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error guardando config en {Path}", _path);
                 throw;
+            }
+        }
+    }
+
+    private void SaveAtomically()
+    {
+        var path = Path.GetFullPath(_path);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var temporaryPath = $"{path}.{Guid.NewGuid():N}.tmp";
+        bool ownsTemporary = false;
+
+        try
+        {
+            using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                ownsTemporary = true;
+                JsonSerializer.Serialize(stream, _current, s_context.QapptiaConfig);
+                stream.Flush(flushToDisk: true);
+            }
+
+            ReplaceFromTemporary(temporaryPath, path);
+            ownsTemporary = false;
+        }
+        finally
+        {
+            if (ownsTemporary)
+            {
+                try { File.Delete(temporaryPath); }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    _logger.Warning(ex, "No se pudo eliminar el archivo temporal de configuración en {Path}", temporaryPath);
+                }
+            }
+        }
+    }
+
+    private static void ReplaceFromTemporary(string temporaryPath, string path)
+    {
+        for (int retry = 0; ; retry++)
+        {
+            try
+            {
+                File.Move(temporaryPath, path, overwrite: true);
+                return;
+            }
+            catch (Exception ex) when (retry < ReplaceRetryCount && OperatingSystem.IsWindows() &&
+                ex.HResult is WindowsAccessDenied or WindowsSharingViolation or WindowsLockViolation)
+            {
+                // Windows puede devolver acceso denegado mientras un lector mantiene abierto el destino.
+                Thread.Sleep(ReplaceRetryDelayMs);
             }
         }
     }

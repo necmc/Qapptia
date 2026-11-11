@@ -1,34 +1,36 @@
-using System;
 using FluentAssertions;
 using Moq;
 using Qapptia.App.Editor.ViewModels;
 using Qapptia.Core.Configuration;
+using Qapptia.Editor.Models;
+using Qapptia.Editor.Services;
 using Xunit;
 
 namespace Qapptia.Editor.Tests.ViewModels;
 
 public sealed class EditorHelpViewModelTests
 {
-    private readonly Mock<IConfigService> _configServiceMock;
+    private readonly Mock<IConfigReader> _configReaderMock = new();
+    private readonly Mock<IEditorStateService> _stateServiceMock = new();
+    private readonly EditorState _state = new();
     private readonly QapptiaConfig _config;
 
     public EditorHelpViewModelTests()
     {
         _config = new QapptiaConfig
         {
-            Capture = { ShortcutScreen = "ctrl+shift+q", ShortcutArea = "ctrl+shift+a" },
-            Editor = { ShowEditorHelpOnStartup = true }
+            Capture = { ShortcutScreen = "ctrl+shift+q", ShortcutArea = "ctrl+shift+a" }
         };
 
-        _configServiceMock = new Mock<IConfigService>();
-        _configServiceMock.Setup(c => c.Current).Returns(_config);
+        _configReaderMock.Setup(c => c.Current).Returns(_config);
+        _stateServiceMock.Setup(s => s.Load()).Returns(_state);
     }
 
     [Fact]
     public void InitializationShouldHaveCorrectInitialStateAndFormattedShortcuts()
     {
         // Act
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object);
 
         // Assert
         vm.IsVisible.Should().BeFalse();
@@ -66,7 +68,7 @@ public sealed class EditorHelpViewModelTests
     public void OpenShouldReloadConfigAndSetIsVisibleTrueAndResetSlideIndex()
     {
         // Arrange
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object);
         vm.CurrentSlideIndex = 3;
 
         // Modificamos atajos en config para simular cambio externo
@@ -77,7 +79,7 @@ public sealed class EditorHelpViewModelTests
         vm.OpenCommand.Execute(null);
 
         // Assert
-        _configServiceMock.Verify(c => c.Reload(), Times.Once);
+        _configReaderMock.Verify(c => c.Reload(), Times.Once);
         vm.IsVisible.Should().BeTrue();
         vm.CurrentSlideIndex.Should().Be(0);
         vm.HasSeenAllSlides.Should().BeFalse();
@@ -90,7 +92,7 @@ public sealed class EditorHelpViewModelTests
     public void StepNavigationShouldAdvanceAndReverseCorrectlyAcrossAllSevenSteps()
     {
         // Arrange
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object);
         vm.OpenCommand.Execute(null);
         vm.HasSeenAllSlides.Should().BeFalse();
 
@@ -157,7 +159,7 @@ public sealed class EditorHelpViewModelTests
     public void NextSlideOnLastStepShouldCloseModal()
     {
         // Arrange
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object);
         vm.OpenCommand.Execute(null);
         vm.CurrentSlideIndex = 6;
 
@@ -173,7 +175,7 @@ public sealed class EditorHelpViewModelTests
     {
         // Arrange
         var shellMock = new Mock<Qapptia.Core.Abstractions.IShellService>();
-        var vm = new EditorHelpViewModel(_configServiceMock.Object, shellMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object, shellMock.Object);
 
         // Act
         vm.OpenSponsorCommand.Execute(null);
@@ -183,10 +185,10 @@ public sealed class EditorHelpViewModelTests
     }
 
     [Fact]
-    public void CloseWithoutMarkingCheckboxShouldHideModalWithoutAlteringConfig()
+    public void CloseShouldHideTheGuideWithoutSavingAgain()
     {
         // Arrange
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object);
         vm.OpenCommand.Execute(null);
         vm.DontShowAgainOnStartup = false;
 
@@ -195,52 +197,61 @@ public sealed class EditorHelpViewModelTests
 
         // Assert
         vm.IsVisible.Should().BeFalse();
-        _config.Editor.ShowEditorHelpOnStartup.Should().BeTrue();
-        _configServiceMock.Verify(c => c.Save(), Times.Never);
+        _state.Session.ShowEditorHelpOnStartup.Should().BeTrue();
+        _stateServiceMock.Verify(s => s.Save(_state), Times.Once);
     }
 
     [Fact]
-    public void CloseWithMarkingCheckboxShouldPersistFalseAndHideModal()
+    public void CheckboxChangesShouldPersistBeforeClosingTheGuide()
     {
         // Arrange
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var vm = new EditorHelpViewModel(_configReaderMock.Object, _stateServiceMock.Object);
         vm.OpenCommand.Execute(null);
         vm.DontShowAgainOnStartup = true;
+        vm.ShouldShowOnStartup.Should().BeFalse();
+        _stateServiceMock.Verify(s => s.Save(_state), Times.Exactly(2));
 
-        // Act
-        vm.CloseCommand.Execute(null);
-
-        // Assert
-        vm.IsVisible.Should().BeFalse();
-        _config.Editor.ShowEditorHelpOnStartup.Should().BeFalse();
-        _configServiceMock.Verify(c => c.Save(), Times.Once);
+        vm.DontShowAgainOnStartup = false;
+        vm.ShouldShowOnStartup.Should().BeTrue();
+        _stateServiceMock.Verify(s => s.Save(_state), Times.Exactly(3));
+        vm.IsVisible.Should().BeTrue();
     }
 
     [Fact]
-    public void OpeningHelpManuallyWhenPreviouslySuppressedShouldResetCheckboxAndReactivateStartup()
+    public void GuidePersistsTheCheckboxInEditorStateAndReloadsItOnStartup()
     {
-        // Arrange: la ayuda estaba previamente suprimida para el arranque
-        _config.Editor.ShowEditorHelpOnStartup = false;
-        var vm = new EditorHelpViewModel(_configServiceMock.Object);
+        var directory = Directory.CreateTempSubdirectory("Qapptia_Help_");
+        try
+        {
+            var configPath = Path.Combine(directory.FullName, Qapptia.Core.Constants.ConfigFileName);
+            var config = new JsonConfigService(configPath);
+            config.Save();
+            var originalConfig = File.ReadAllText(configPath);
+            var vm = CreateGuide();
 
-        // Act: se abre manualmente (desde "Acerca de" o menú)
-        vm.OpenCommand.Execute(null);
+            vm.ShouldShowOnStartup.Should().BeTrue();
+            vm.OpenCommand.Execute(null);
+            vm.DontShowAgainOnStartup = true;
 
-        // Assert: la casilla aparece desmarcada y se reactiva la persistencia en config
-        vm.IsVisible.Should().BeTrue();
-        vm.DontShowAgainOnStartup.Should().BeFalse("la casilla debe aparecer desactivada al abrir manualmente");
-        _config.Editor.ShowEditorHelpOnStartup.Should().BeTrue("debe reactivarse para que vuelva a mostrarse al iniciar a menos que el usuario vuelva a marcar");
-        _configServiceMock.Verify(c => c.Save(), Times.Once);
+            var reopenedEditor = CreateGuide();
+            reopenedEditor.ShouldShowOnStartup.Should().BeFalse();
+            reopenedEditor.OpenCommand.Execute(null);
+            reopenedEditor.DontShowAgainOnStartup.Should().BeFalse();
+            CreateGuide().ShouldShowOnStartup.Should().BeTrue();
 
-        // Act 2: si el usuario simplemente cierra sin marcar, permanece reactivada
-        vm.CloseCommand.Execute(null);
-        _config.Editor.ShowEditorHelpOnStartup.Should().BeTrue();
+            reopenedEditor.DontShowAgainOnStartup = true;
+            reopenedEditor.DontShowAgainOnStartup = false;
+            reopenedEditor.CloseCommand.Execute(null);
+            CreateGuide().ShouldShowOnStartup.Should().BeTrue();
+            File.ReadAllText(configPath).Should().Be(originalConfig);
 
-        // Act 3: si el usuario vuelve a abrir, marca la casilla y cierra, se vuelve a suprimir
-        vm.OpenCommand.Execute(null);
-        vm.DontShowAgainOnStartup = true;
-        vm.CloseCommand.Execute(null);
-        _config.Editor.ShowEditorHelpOnStartup.Should().BeFalse();
+            EditorHelpViewModel CreateGuide() => new(config,
+                new EditorStateService(directory.FullName, Qapptia.Core.Constants.EditorStateFileName));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
     }
 }
 

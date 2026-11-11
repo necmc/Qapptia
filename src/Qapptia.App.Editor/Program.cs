@@ -177,7 +177,7 @@ public sealed class Program
         // Logging & Configuración
         services.AddSingleton<Serilog.ILogger>(Log.Logger);
         var configPath = Qapptia.Core.Constants.DefaultConfigPath;
-        services.AddSingleton<IConfigService>(_ => new JsonConfigService(configPath));
+        services.AddSingleton<IConfigReader>(_ => new JsonConfigService(configPath));
 
         // Módulos transversales de Plataforma (mismo estándar que App.Capture)
 #if WINDOWS
@@ -217,7 +217,7 @@ public sealed class Program
         // ViewModel y Vistas
         services.AddTransient<EditorViewModel>(sp =>
         {
-            var config = sp.GetRequiredService<IConfigService>();
+            var config = sp.GetRequiredService<IConfigReader>();
             var configuredSavePath = config.Current.General.SavePath;
             var savePath = string.IsNullOrWhiteSpace(configuredSavePath)
                 ? Qapptia.Core.Constants.DefaultSavePath

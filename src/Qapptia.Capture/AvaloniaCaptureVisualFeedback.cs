@@ -8,7 +8,7 @@ using Serilog;
 namespace Qapptia.Capture;
 
 public sealed class AvaloniaCaptureVisualFeedback(
-    ICaptureIndicatorSurface surface, IConfigService config, ILogger logger) : ICaptureVisualFeedback, IDisposable
+    ICaptureIndicatorSurface surface, IConfigReader config, ILogger logger) : ICaptureVisualFeedback, IDisposable
 {
     private static readonly TimeSpan s_frameInterval = TimeSpan.FromMilliseconds(16);
     private readonly object _stateLock = new();

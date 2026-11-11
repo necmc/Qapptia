@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Qapptia.Core.Abstractions;
 using Qapptia.Core.Configuration;
 using Qapptia.Core.Services;
+using Qapptia.Editor.Services;
 
 namespace Qapptia.App.Editor.ViewModels;
 
@@ -15,7 +16,8 @@ namespace Qapptia.App.Editor.ViewModels;
 /// </summary>
 public partial class EditorHelpViewModel : ObservableObject
 {
-    private readonly IConfigService _configService;
+    private readonly IConfigReader _configReader;
+    private readonly IEditorStateService _stateService;
     private readonly IShellService _shellService;
     private readonly HashSet<int> _visitedSlides = [];
 
@@ -24,8 +26,17 @@ public partial class EditorHelpViewModel : ObservableObject
     [ObservableProperty]
     private bool _isVisible;
 
-    [ObservableProperty]
-    private bool _dontShowAgainOnStartup;
+    public bool ShouldShowOnStartup => _stateService.Load().Session.ShowEditorHelpOnStartup;
+
+    public bool DontShowAgainOnStartup
+    {
+        get => !ShouldShowOnStartup;
+        set
+        {
+            if (value != DontShowAgainOnStartup)
+                SaveStartupPreference(!value);
+        }
+    }
 
     [ObservableProperty]
     private string _shortcutScreenText = "Ctrl + Shift + Q";
@@ -72,9 +83,10 @@ public partial class EditorHelpViewModel : ObservableObject
     public bool IsSlide5 => CurrentSlideIndex == 5;
     public bool IsSlide6 => CurrentSlideIndex == 6;
 
-    public EditorHelpViewModel(IConfigService configService, IShellService? shellService = null)
+    public EditorHelpViewModel(IConfigReader configReader, IEditorStateService stateService, IShellService? shellService = null)
     {
-        _configService = configService ?? throw new ArgumentNullException(nameof(configService));
+        _configReader = configReader ?? throw new ArgumentNullException(nameof(configReader));
+        _stateService = stateService ?? throw new ArgumentNullException(nameof(stateService));
         _shellService = shellService ?? NullShellService.Instance;
         RefreshShortcuts();
     }
@@ -112,7 +124,7 @@ public partial class EditorHelpViewModel : ObservableObject
     {
         try
         {
-            _configService.Reload();
+            _configReader.Reload();
         }
         catch
         {
@@ -124,24 +136,9 @@ public partial class EditorHelpViewModel : ObservableObject
         _visitedSlides.Add(0);
         HasSeenAllSlides = false;
         CurrentSlideIndex = 0;
-        
-        // Al abrir la ayuda, la casilla siempre inicia desmarcada
-        DontShowAgainOnStartup = false;
 
-        // Si estaba previamente suprimida, al abrir manualmente se reactiva la ayuda para el inicio
-        if (_configService.Current != null && !_configService.Current.Editor.ShowEditorHelpOnStartup)
-        {
-            try
-            {
-                _configService.Current.Editor.ShowEditorHelpOnStartup = true;
-                _configService.Save();
-            }
-            catch
-            {
-                // Resiliencia de guardado
-            }
-        }
-
+        // Cada apertura restablece la preferencia de mostrar la ayuda al iniciar.
+        SaveStartupPreference(show: true);
         IsVisible = true;
     }
 
@@ -193,28 +190,18 @@ public partial class EditorHelpViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Cierra la guía y persiste la omisión futura si la casilla fue marcada.
+    /// Cierra la guía.
     /// </summary>
     [RelayCommand]
-    public void Close()
-    {
-        if (DontShowAgainOnStartup)
-        {
-            try
-            {
-                if (_configService.Current.Editor.ShowEditorHelpOnStartup)
-                {
-                    _configService.Current.Editor.ShowEditorHelpOnStartup = false;
-                    _configService.Save();
-                }
-            }
-            catch
-            {
-                // Resiliencia de guardado
-            }
-        }
+    public void Close() => IsVisible = false;
 
-        IsVisible = false;
+    private void SaveStartupPreference(bool show)
+    {
+        var state = _stateService.Load();
+        state.Session.ShowEditorHelpOnStartup = show;
+        _stateService.Save(state);
+        OnPropertyChanged(nameof(ShouldShowOnStartup));
+        OnPropertyChanged(nameof(DontShowAgainOnStartup));
     }
 
     /// <summary>
@@ -222,7 +209,7 @@ public partial class EditorHelpViewModel : ObservableObject
     /// </summary>
     public void RefreshShortcuts()
     {
-        var current = _configService.Current?.Capture;
+        var current = _configReader.Current?.Capture;
         ShortcutScreenText = FormatShortcut(current?.ShortcutScreen, "Ctrl + Shift + Q");
         ShortcutAreaText = FormatShortcut(current?.ShortcutArea, "Ctrl + Shift + A");
     }

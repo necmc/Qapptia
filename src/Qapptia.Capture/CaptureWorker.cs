@@ -13,7 +13,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
     private readonly IHotkeyRegistrar _hotkeys;
     private readonly IFullscreenCaptureService _fullscreenCapture;
     private readonly IAreaCaptureService _areaCapture;
-    private readonly IConfigService _config;
+    private readonly IConfigReader _config;
     private readonly IPowerEvents _powerEvents;
     private readonly IShutterSoundService _shutterSound;
     private readonly ILogger _logger;
@@ -32,7 +32,7 @@ public sealed class CaptureWorker : BackgroundService, ICaptureActionHandler
         IHotkeyRegistrar hotkeys,
         IFullscreenCaptureService fullscreenCapture,
         IAreaCaptureService areaCapture,
-        IConfigService config,
+        IConfigReader config,
         IPowerEvents powerEvents,
         IShutterSoundService shutterSound,
         ILogger logger,

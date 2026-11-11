@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Qapptia.App.Editor;
 using Qapptia.App.Editor.ViewModels;
 using Qapptia.Core.Abstractions;
+using Qapptia.Core.Configuration;
 using Qapptia.Editor.Core;
 using Qapptia.Editor.Services;
 using Xunit;
@@ -16,6 +17,8 @@ public sealed class EditorDependencyInjectionTests
     {
         var services = Program.ConfigureServices();
 
+        services.GetRequiredService<IConfigReader>().Should().NotBeNull();
+        services.GetService<IConfigService>().Should().BeNull();
         services.GetRequiredService<IFontProvider>().Should().NotBeNull();
         services.GetRequiredService<INavigationService>().Should().NotBeNull();
         services.GetRequiredService<ICanvasStateService>().Should().NotBeNull();

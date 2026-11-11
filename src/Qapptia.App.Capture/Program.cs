@@ -114,7 +114,7 @@ internal static class Program
         builder.Logging.AddSerilog(Log.Logger, dispose: false);
 
         var configPath = Qapptia.Core.Constants.DefaultConfigPath;
-        builder.Services.AddSingleton<IConfigService>(_ => new JsonConfigService(configPath));
+        builder.Services.AddSingleton<IConfigReader>(_ => new JsonConfigService(configPath));
         builder.Services.AddSingleton<IProcessLauncher, DefaultProcessLauncher>();
 
 #if WINDOWS
@@ -177,7 +177,7 @@ internal sealed class HeadlessCaptureApp : Application
                 SingleClickAction = () => ActivateEditorAsync(launcher, launchIfClosed: false),
                 DoubleClickAction = () => ActivateEditorAsync(launcher, launchIfClosed: true)
             };
-            var config = services.GetService<IConfigService>();
+            var config = services.GetService<IConfigReader>();
 
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuCaptureScreen, () => captureHandler?.HandleFullscreenCaptureAsync(CancellationToken.None), shortcutTextProvider: () => config?.Current.Capture.ShortcutScreen));
             menuDef.Items.Add(new TrayMenuActionItem(CaptureConstants.TrayMenuCaptureArea, () => captureHandler?.HandleAreaCaptureAsync(CancellationToken.None), shortcutTextProvider: () => config?.Current.Capture.ShortcutArea));

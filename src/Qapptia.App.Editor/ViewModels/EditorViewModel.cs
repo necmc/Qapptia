@@ -34,11 +34,10 @@ public partial class EditorViewModel : ObservableObject, IDisposable
     private readonly IUpdateCheckService? _updateCheckService;
     private readonly PeriodicUpdateCoordinator? _updateCoordinator;
     private readonly SponsorVisualInfo _sponsorVisual;
-    private readonly IConfigService? _configService;
     private CancellationTokenSource? _toastCts;
 
     public EditorHelpViewModel Help { get; }
-    public bool ShouldShowHelpOnStartup => _configService?.Current.Editor.ShowEditorHelpOnStartup ?? true;
+    public bool ShouldShowHelpOnStartup => Help.ShouldShowOnStartup;
 
     public string SponsorText => _sponsorVisual.Text;
     public string SponsorIconKey => _sponsorVisual.IconKey;
@@ -129,13 +128,12 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         TimeProvider? timeProvider = null,
         Action<Action>? uiDispatcher = null,
         bool queryIpcUpdateOnStartup = false,
-        IConfigService? configService = null,
+        IConfigReader? configService = null,
         EditorHelpViewModel? helpViewModel = null)
     {
         var shell = shellService ?? NullShellService.Instance;
         _shellService = shell;
-        _configService = configService;
-        Help = helpViewModel ?? new EditorHelpViewModel(configService ?? new DefaultFallbackConfigService(), shell);
+        Help = helpViewModel ?? new EditorHelpViewModel(configService ?? new DefaultFallbackConfigReader(), stateService, shell);
         _clipboardService = clipboardService;
         _updateCheckService = updateCheckService;
         if (_updateCheckService != null)
@@ -786,10 +784,9 @@ public partial class EditorViewModel : ObservableObject, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private sealed class DefaultFallbackConfigService : IConfigService
+    private sealed class DefaultFallbackConfigReader : IConfigReader
     {
         public Qapptia.Core.Configuration.QapptiaConfig Current { get; } = new();
-        public void Save() { }
         public void Reload() { }
     }
 }
