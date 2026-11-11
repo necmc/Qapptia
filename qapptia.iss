@@ -61,42 +61,42 @@ english.AdditionalOptions=Additional options:
 spanish.AdditionalOptions=Opciones adicionales:
 english.PermissionCheckOperation=Permission check
 spanish.PermissionCheckOperation=Comprobación de permisos
-english.UninstallPermissionStopped=Uninstall was not completed.%n%nPlease correct the problem and run Uninstall again.
-spanish.UninstallPermissionStopped=La desinstalación no se ha completado.%n%nPor favor, solucione el problema y ejecute nuevamente el programa de desinstalación.
+english.UninstallFileRemovalFailed=Could not remove a Qapptia file.%n%1%n%nClose the app using it or check its permissions, then try again.
+spanish.UninstallFileRemovalFailed=No se pudo quitar un archivo de Qapptia.%n%1%n%nCierre la aplicación que lo esté usando o revise sus permisos y vuelva a intentarlo.
+english.UninstallFilesRemaining=Qapptia files remain in %1.%n%nClose any apps using them and run Setup to repair the installation.
+spanish.UninstallFilesRemaining=Quedaron archivos de Qapptia en %1.%n%nCierre las aplicaciones que los usen y ejecute el instalador para reparar la instalación.
 
 english.PrepareInstallFailed=Setup could not prepare the application files because another process has locked them.%n%nPlease close any running applications and try again.
 spanish.PrepareInstallFailed=El programa de instalación no pudo preparar los archivos de la aplicación porque otro proceso los tiene bloqueados.%n%nPor favor, cierre cualquier aplicación abierta y vuelva a intentarlo.
-english.AutoStartApplyFailed=Setup could not configure automatic startup. The previous state will be restored where available. Check the installation log and permissions.
-spanish.AutoStartApplyFailed=No se pudo configurar el inicio automático. Se restaurará el estado anterior cuando esté disponible. Revise el registro de instalación y los permisos.
+english.AutoStartApplyFailed=Could not configure automatic startup. Setup will try to restore the previous setting.
+spanish.AutoStartApplyFailed=No se pudo configurar el inicio automático. Se intentará recuperar el ajuste anterior.
 
-english.AppRunningPromptInstall=Setup has detected that {#MyAppName} is currently running.%n%nPlease close the application from the system tray, then click Retry to continue, or Exit to cancel.
-spanish.AppRunningPromptInstall=El programa de instalación ha detectado que {#MyAppName} está ejecutándose.%n%nPor favor, ciérrelo desde la bandeja del sistema y haga clic en Reintentar para continuar, o en Salir para cancelar.
-english.AppRunningPromptUninstall=Uninstall has detected that {#MyAppName} is currently running.%n%nPlease close the application from the system tray, then click Retry to continue, or Exit to cancel.
-spanish.AppRunningPromptUninstall=El programa de desinstalación ha detectado que {#MyAppName} está ejecutándose.%n%nPor favor, ciérrelo desde la bandeja del sistema y haga clic en Reintentar para continuar, o en Salir para cancelar.
+english.AppRunningPrompt=%1 is running. Close it and click Retry to continue installing.
+spanish.AppRunningPrompt=%1 está en ejecución. Ciérrelo y pulse «Reintentar» para continuar con la instalación.
+english.AppRunningPromptUninstall=%1 is running. Close it and click Retry to continue uninstalling.
+spanish.AppRunningPromptUninstall=%1 está en ejecución. Ciérrelo y pulse «Reintentar» para continuar con la desinstalación.
 english.AppStillRunning={#MyAppName} is still running.
 spanish.AppStillRunning={#MyAppName} sigue en ejecución.
 english.ButtonRetry=&Retry
 spanish.ButtonRetry=&Reintentar
 english.ButtonExit=&Exit
 spanish.ButtonExit=&Salir
-english.AppRunningStillOpen={#MyAppName} is still running. Please close it from the system tray and click Retry.
-spanish.AppRunningStillOpen={#MyAppName} aún se encuentra en ejecución. Ciérrela desde la bandeja del sistema y presione Reintentar.
 
-english.ScopeTransitionUserToAll=A per-user installation of Qapptia already exists on this computer.%n%nDo you want to uninstall it and install Qapptia for all users?
-spanish.ScopeTransitionUserToAll=Ya existe una instalación de Qapptia para el usuario actual en este equipo.%n%n¿Desea desinstalarla e instalar Qapptia para todos los usuarios?
+english.ScopeTransitionUserToAll=Qapptia is already installed for you only. To install it for all users, Setup will remove the current installation and its components. Your captures will be kept.%n%nDo you want to continue?
+spanish.ScopeTransitionUserToAll=Ya tiene Qapptia instalado solo para usted. Para instalarlo para todos los usuarios, se quitará la instalación actual con sus componentes. Sus capturas se conservan.%n%n¿Desea continuar?
 
-english.ScopeTransitionAllToUser=An all-users installation of Qapptia already exists on this computer.%n%nDo you want to uninstall it and install Qapptia for the current user only?
-spanish.ScopeTransitionAllToUser=Ya existe una instalación de Qapptia para todos los usuarios en este equipo.%n%n¿Desea desinstalarla e instalar Qapptia solo para el usuario actual?
+english.ScopeTransitionAllToUser=Qapptia is already installed for all users. To install it for you only, Setup will remove the current installation and its components. Your captures will be kept.%n%nDo you want to continue?
+spanish.ScopeTransitionAllToUser=Ya tiene Qapptia instalado para todos los usuarios. Para instalarlo solo para usted, se quitará la instalación actual con sus componentes. Sus capturas se conservan.%n%n¿Desea continuar?
 english.ScopeTransitionRequiresAdmin=A Qapptia installation for all users was detected. Administrator privileges are required to change it.
 spanish.ScopeTransitionRequiresAdmin=Se detectó una instalación de Qapptia para todos los usuarios. Para cambiarla se requieren permisos de administrador.
-english.UninstallStartFailed=The previous Qapptia uninstaller could not be started.
-spanish.UninstallStartFailed=No se pudo iniciar el desinstalador anterior de Qapptia.
-english.UninstallExitFailed=The previous Qapptia uninstaller finished with an error (code %1).
-spanish.UninstallExitFailed=El desinstalador anterior de Qapptia finalizó con un error (código %1).
-english.UninstallRecoveryPrompt=Do you want to remove the application files to continue?
-spanish.UninstallRecoveryPrompt=¿Desea eliminar los archivos de la aplicación para continuar?
-english.ScopeTransitionRemovalFailed=The previous Qapptia installation could not be removed. The new installation has not started. Correct the problem and try again.
-spanish.ScopeTransitionRemovalFailed=No se pudo retirar la instalación anterior de Qapptia. La nueva instalación no se ha iniciado. Solucione el problema e inténtelo de nuevo.
+english.UninstallStartFailed=Could not start the previous uninstaller.
+spanish.UninstallStartFailed=No se pudo iniciar el desinstalador anterior.
+english.UninstallExitFailed=The uninstaller failed (code %1).
+spanish.UninstallExitFailed=El desinstalador falló (código %1).
+english.UninstallRecoveryPrompt=Your captures will be kept.%n%nDo you want to remove the previous installation and continue?
+spanish.UninstallRecoveryPrompt=Sus capturas se conservan.%n%n¿Desea quitar la instalación anterior y continuar?
+english.ScopeTransitionRemovalFailed=The previous installation could not be removed. The new installation did not start.
+spanish.ScopeTransitionRemovalFailed=No se pudo quitar la instalación anterior. La nueva instalación no se inició.
 english.UninstallInProgress=A Qapptia uninstallation is in progress. Wait for it to finish, then run Setup again.
 spanish.UninstallInProgress=Hay una desinstalación de Qapptia en curso. Espere a que termine y vuelva a ejecutar el instalador.
 
@@ -285,6 +285,10 @@ const
   UninstallMutexName = 'Global\QapptiaUninstaller';
   UninstallWaitIntervalMs = 100;
   UninstallWaitMaxAttempts = 600;
+  UserDataDirectory = '{localappdata}\{#MyAppName}';
+  GlobalConfigFileName = 'global_config.json';
+  LegacyConfigFileName = 'config.json';
+  EditorStateFileName = 'editor_state.json';
 
 var
   PreviousInstallPath: string;
@@ -340,17 +344,9 @@ begin
 end;
 
 procedure ReportPermissionFailure(const ErrorText: string);
-var
-  Silent: Boolean;
 begin
   Log(ErrorText);
-  if IsUninstaller then Silent := UninstallSilent else Silent := WizardSilent;
-  if Silent then Exit;
-  MsgBox(ErrorText, mbError, MB_OK);
-  if IsUninstaller then
-    MsgBox(ExpandConstant('{cm:UninstallPermissionStopped}'), mbError, MB_OK)
-  else
-    MsgBox(SetupMessage(msgSetupAborted), mbError, MB_OK);
+  if not UninstallSilent then MsgBox(ErrorText, mbError, MB_OK);
 end;
 
 function GetAutoStartRoot: Integer;
@@ -626,7 +622,7 @@ end;
 
 // Diálogo nativo estándar para advertir procesos en ejecución en instalador y desinstalador
 
-function EnsureQapptiaClosed(IsUninstalling: Boolean): Boolean;
+function EnsureQapptiaClosed: Boolean;
 var
   PromptMsg: string;
 begin
@@ -643,24 +639,15 @@ begin
     Exit;
   end;
 
-  // En modo interactivo: Diálogo modal nativo de Windows con Reintentar / Salir
-  if IsUninstalling then
-    PromptMsg := ExpandConstant('{cm:AppRunningPromptUninstall}')
-  else
-    PromptMsg := ExpandConstant('{cm:AppRunningPromptInstall}');
-
+  // En modo interactivo, mostrar el diálogo nativo con Reintentar y Cancelar.
   while IsAppRunning do
   begin
     if ProcessScanFailed then
       PromptMsg := 'No se pudo comprobar si Qapptia está en ejecución. Reintente o cancele.'
-    else if BlockingProcess <> '' then
-    begin
-      if IsUninstalling then
-        PromptMsg := ExpandConstant('{cm:AppRunningPromptUninstall}')
-      else
-        PromptMsg := ExpandConstant('{cm:AppRunningPromptInstall}');
-      PromptMsg := PromptMsg + #13#10#13#10 + BlockingProcess;
-    end;
+    else if IsUninstaller then
+      PromptMsg := FmtMessage(ExpandConstant('{cm:AppRunningPromptUninstall}'), [BlockingProcess])
+    else
+      PromptMsg := FmtMessage(ExpandConstant('{cm:AppRunningPrompt}'), [BlockingProcess]);
     if SuppressibleMsgBox(PromptMsg, mbConfirmation, MB_RETRYCANCEL, IDRETRY) <> IDRETRY then
     begin
       Result := False;
@@ -802,8 +789,9 @@ end;
 
 function CanDeleteFile(const FileName: string): Boolean; forward;
 function CanDeleteDirectoryFiles(const DirPath: string; var BlockedPath: string): Boolean; forward;
+function ProcessUserConfiguration(DeleteFiles: Boolean; var BlockedPath: string): Boolean; forward;
 
-function PurgeInstallationHive(RootKey: Integer; const InstPath, UninsExe: string): Boolean;
+function PurgeInstallationHive(RootKey: Integer; const InstPath, UninsExe: string; var ConfigBlockedPath: string): Boolean;
 var
   ExitCode: DWORD;
   NeedsRescue, UninstallerStarted: Boolean;
@@ -811,6 +799,7 @@ var
   StartupRoot: Integer;
 begin
   Result := False;
+  ConfigBlockedPath := '';
   if (RootKey <> HKCU) and not IsAdmin then
   begin
     Log('La instalación anterior requiere permisos de administrador.');
@@ -823,6 +812,12 @@ begin
   if (NormalPath <> '') and
      ((NormalPath = ExtractFileDrive(NormalPath) + '\') or
       (CompareText(NormalPath, ExpandConstant('{win}')) = 0)) then Exit;
+
+  if not ProcessUserConfiguration(False, BlockedPath) then
+  begin
+    ConfigBlockedPath := BlockedPath;
+    Exit;
+  end;
 
   NeedsRescue := True;
   UninstallerStarted := False;
@@ -881,6 +876,14 @@ begin
     end;
   end;
 
+  // El desinstalador anterior o la retirada de rescate pueden dejar la configuración.
+  if not ProcessUserConfiguration(True, BlockedPath) then
+  begin
+    ConfigBlockedPath := BlockedPath;
+    Exit;
+  end;
+  RemoveDir(ExpandConstant(UserDataDirectory));
+
   if RootKey = HKCU then StartupRoot := HKCU else StartupRoot := HKLM64;
   if not ClearAutoStart(StartupRoot) then
   begin
@@ -914,7 +917,7 @@ begin
   end;
 
   // 1. Validación al arrancar el instalador: Qapptia no debe estar en ejecución
-  if not EnsureQapptiaClosed(False) then
+  if not EnsureQapptiaClosed then
     Exit;
 
   Result := True;
@@ -1044,7 +1047,7 @@ begin
   // Validación en pasos críticos del asistente antes de proceder
   if (CurPageID = wpSelectDir) or (CurPageID = wpReady) then
   begin
-    if not EnsureQapptiaClosed(False) then
+    if not EnsureQapptiaClosed then
     begin
       Result := False;
       Exit;
@@ -1280,13 +1283,70 @@ begin
   end;
 end;
 
+function ProcessUserConfiguration(DeleteFiles: Boolean; var BlockedPath: string): Boolean;
+var
+  ConfigDir: string;
+  Entry: TFindRec;
+  Files: TStringList;
+  I: Integer;
+begin
+  ConfigDir := ExpandConstant(UserDataDirectory);
+  Result := not DirExists(ConfigDir);
+  if Result then Exit;
+
+  BlockedPath := ConfigDir;
+  if not FindFirst(ConfigDir, Entry) then Exit;
+  try
+    if (Entry.Attributes and $400 {FILE_ATTRIBUTE_REPARSE_POINT}) <> 0 then Exit;
+  finally
+    FindClose(Entry);
+  end;
+
+  Files := TStringList.Create;
+  try
+    Files.Add(ConfigDir + '\' + GlobalConfigFileName);
+    Files.Add(ConfigDir + '\' + LegacyConfigFileName);
+    Files.Add(ConfigDir + '\' + EditorStateFileName);
+    if FindFirst(ConfigDir + '\' + GlobalConfigFileName + '.*.tmp', Entry) then
+    try
+      repeat
+        if (Entry.Attributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then
+          Files.Add(ConfigDir + '\' + Entry.Name);
+      until not FindNext(Entry);
+    finally
+      FindClose(Entry);
+    end;
+
+    for I := 0 to Files.Count - 1 do
+    begin
+      BlockedPath := Files[I];
+      if not CanDeleteFile(BlockedPath) then Exit;
+    end;
+    if DeleteFiles then
+      for I := 0 to Files.Count - 1 do
+      begin
+        BlockedPath := Files[I];
+        if FileExists(BlockedPath) then
+        begin
+          DeleteFile(BlockedPath);
+          if FileExists(BlockedPath) then Exit;
+        end;
+      end;
+    Result := True;
+  finally
+    Files.Free;
+  end;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ConfigBlockedPath: string;
 begin
   Result := '';
   NeedsRestart := False;
 
   // 1. Garantizar que ninguna instancia de Qapptia esté activa
-  if not EnsureQapptiaClosed(False) then
+  if not EnsureQapptiaClosed then
   begin
     Result := ExpandConstant('{cm:AppStillRunning}');
     Exit;
@@ -1298,8 +1358,7 @@ begin
     Result := CheckPathPermissions(MigrationInstallPath, True);
   if Result <> '' then
   begin
-    ReportPermissionFailure(Result);
-    if not WizardSilent then PostMessage(WizardForm.Handle, $0010 {WM_CLOSE}, 0, 0);
+    Log(Result);
     Exit;
   end;
 
@@ -1314,9 +1373,12 @@ begin
       Result := ExpandConstant('{cm:ScopeTransitionRemovalFailed}');
       Exit;
     end;
-    if not PurgeInstallationHive(MigrationRootKey, MigrationInstallPath, MigrationUninstallExe) then
+    if not PurgeInstallationHive(MigrationRootKey, MigrationInstallPath, MigrationUninstallExe, ConfigBlockedPath) then
     begin
-      Result := ExpandConstant('{cm:ScopeTransitionRemovalFailed}');
+      if ConfigBlockedPath <> '' then
+        Result := FmtMessage(ExpandConstant('{cm:UninstallFileRemovalFailed}'), [ConfigBlockedPath])
+      else
+        Result := ExpandConstant('{cm:ScopeTransitionRemovalFailed}');
       Log(Result + ' ' + MigrationInstallPath);
       Exit;
     end;
@@ -1353,7 +1415,7 @@ begin
     if not UninstallSilent then MsgBox('Ya hay una desinstalación de Qapptia en curso.', mbError, MB_OK);
     Exit;
   end;
-  if not EnsureQapptiaClosed(True) then Exit;
+  if not EnsureQapptiaClosed then Exit;
   BackupDir := ExpandConstant('{app}\.qapptia-recovery');
   PermissionError := CheckPathPermissions(ExpandConstant('{app}'), DirExists(BackupDir));
   if PermissionError <> '' then
@@ -1365,8 +1427,7 @@ begin
   if not CanDeleteFile(BlockedPath) or
      not CanDeleteDirectoryFiles(ExpandConstant('{app}\app'), BlockedPath) then
   begin
-    Log('No se puede comenzar la desinstalación: ' + BlockedPath);
-    ReportPermissionFailure('No se puede desinstalar porque un archivo está en uso o no tiene permisos: ' + BlockedPath);
+    ReportPermissionFailure(FmtMessage(ExpandConstant('{cm:UninstallFileRemovalFailed}'), [BlockedPath]));
     Exit;
   end;
   if not RestorePreviousInstallation(BackupDir, ExpandConstant('{app}')) then
@@ -1384,11 +1445,11 @@ end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  PermissionError: string;
+  PermissionError, BlockedPath: string;
 begin
   if CurUninstallStep = usUninstall then
   begin
-    if not EnsureQapptiaClosed(True) then
+    if not EnsureQapptiaClosed then
       Abort;
     // Revalidar tras la confirmación del usuario, antes de eliminar archivos o registros.
     PermissionError := CheckPathPermissions(ExpandConstant('{app}'), False);
@@ -1397,11 +1458,18 @@ begin
       ReportPermissionFailure(PermissionError);
       Abort;
     end;
+
+    if not ProcessUserConfiguration(True, BlockedPath) then
+    begin
+      ReportPermissionFailure(FmtMessage(ExpandConstant('{cm:UninstallFileRemovalFailed}'), [BlockedPath]));
+      Abort;
+    end;
   end
   else if CurUninstallStep = usPostUninstall then
   begin
     DeleteDesktopIcons;
-    DelTree(ExpandConstant('{localappdata}\{#MyAppName}\logs'), True, True, True);
+    DelTree(ExpandConstant(UserDataDirectory + '\logs'), True, True, True);
+    RemoveDir(ExpandConstant(UserDataDirectory));
     RemoveDir(ExpandConstant('{app}\app'));
     RemoveDir(ExpandConstant('{app}'));
     if FileExists(ExpandConstant('{app}\{#MyAppExeName}')) or
@@ -1412,7 +1480,7 @@ begin
     begin
       Log('La desinstalación no pudo eliminar todos los binarios de Qapptia: ' + ExpandConstant('{app}'));
       if not UninstallSilent then
-        MsgBox('La desinstalación quedó incompleta. Cierre los procesos que usan los archivos y ejecute el instalador para reparar o reintentar: ' + ExpandConstant('{app}'), mbError, MB_OK);
+        MsgBox(FmtMessage(ExpandConstant('{cm:UninstallFilesRemaining}'), [ExpandConstant('{app}')]), mbError, MB_OK);
       Abort;
     end;
   end;
