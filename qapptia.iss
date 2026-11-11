@@ -35,7 +35,7 @@ SolidCompression=yes
 SetupMutex=QapptiaInstaller,Global\QapptiaInstaller
 WizardStyle=modern
 PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog commandline
+PrivilegesRequiredOverridesAllowed=commandline
 DisableWelcomePage=yes
 DisableDirPage=no
 UsePreviousAppDir=yes
@@ -61,6 +61,8 @@ english.AdditionalOptions=Additional options:
 spanish.AdditionalOptions=Opciones adicionales:
 english.PermissionCheckOperation=Permission check
 spanish.PermissionCheckOperation=Comprobación de permisos
+english.UpdateInstallMode=%1 (update)
+spanish.UpdateInstallMode=%1 (actualizar)
 english.UninstallFileRemovalFailed=Could not remove a Qapptia file.%n%1%n%nClose the app using it or check its permissions, then try again.
 spanish.UninstallFileRemovalFailed=No se pudo quitar un archivo de Qapptia.%n%1%n%nCierre la aplicación que lo esté usando o revise sus permisos y vuelva a intentarlo.
 english.UninstallFilesRemaining=Qapptia files remain in %1.%n%nClose any apps using them and run Setup to repair the installation.
@@ -214,6 +216,48 @@ type
     dwProcessId, dwThreadId: DWORD;
   end;
 
+  TInstallModeButtons = record
+    FirstId: Integer;
+    FirstText: string;
+    SecondId: Integer;
+    SecondText: string;
+  end;
+
+  TInstallModeDialog = record
+    Size: UINT;
+    Owner: HWND;
+    Instance: THandle;
+    Flags, CommonButtons: DWORD;
+    Title, MainIcon, Instruction, Content: string;
+    ButtonCount: UINT;
+    Buttons: LongWord;
+    DefaultButton: Integer;
+    RadioButtonCount, RadioButtons: UINT;
+    DefaultRadioButton: Integer;
+    VerificationText, ExpandedInformation, ExpandedControlText, CollapsedControlText: string;
+    FooterIcon, Footer: LongWord;
+    Callback, CallbackData: LongWord;
+    Width: UINT;
+  end;
+
+function GetModuleHandleW(ModuleName: LongWord): THandle;
+  external 'GetModuleHandleW@kernel32.dll stdcall';
+
+function LocalAlloc(Flags, Size: UINT): LongWord;
+  external 'LocalAlloc@kernel32.dll stdcall';
+
+function LocalFree(Memory: LongWord): LongWord;
+  external 'LocalFree@kernel32.dll stdcall';
+
+procedure CopyInstallModeButtons(Destination: LongWord; var Buttons: TInstallModeButtons; Size: UINT);
+  external 'RtlMoveMemory@ntdll.dll stdcall';
+
+function TaskDialogIndirect(var Config: TInstallModeDialog; var Button: Integer; RadioButton, Verification: LongWord): Integer;
+  external 'TaskDialogIndirect@comctl32.dll stdcall delayload';
+
+function SendMessageW(Window: HWND; Message: UINT; WParam, LParam: LongWord): LongInt;
+  external 'SendMessageW@user32.dll stdcall';
+
 function PeekMessage(var lpMsg: TAppMsg; hWnd: HWND; wMsgFilterMin, wMsgFilterMax, wRemoveMsg: UINT): BOOL;
   external 'PeekMessageW@user32.dll stdcall';
 
@@ -289,6 +333,10 @@ const
   GlobalConfigFileName = 'global_config.json';
   LegacyConfigFileName = 'config.json';
   EditorStateFileName = 'editor_state.json';
+  TDF_USE_COMMAND_LINKS = $0010;
+  TDCBF_CANCEL_BUTTON = $0008;
+  TDN_CREATED = 0;
+  TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE = $0473;
 
 var
   PreviousInstallPath: string;
@@ -718,6 +766,106 @@ begin
   end;
 end;
 
+function InstallModeDialogCallback(Window: HWND; Notification, WParam, LParam, Button: LongWord): LongInt;
+begin
+  if Notification = TDN_CREATED then
+    SendMessageW(Window, TDM_SET_BUTTON_ELEVATION_REQUIRED_STATE, Button, 1);
+  Result := 0;
+end;
+
+function ShowInstallModeDialog: Integer;
+var
+  Config: TInstallModeDialog;
+  Buttons: TInstallModeButtons;
+  CurrentUserText, AllUsersText: string;
+begin
+  CurrentUserText := SetupMessage(msgPrivilegesRequiredOverrideCurrentUser);
+  AllUsersText := SetupMessage(msgPrivilegesRequiredOverrideAllUsers);
+  if HasPreviousInstall and (PreviousRootKey <> HKCU) then
+  begin
+    Buttons.FirstId := IDNO;
+    Buttons.FirstText := FmtMessage(ExpandConstant('{cm:UpdateInstallMode}'), [AllUsersText]);
+    Buttons.SecondId := IDYES;
+    Buttons.SecondText := CurrentUserText;
+    Config.Content := FmtMessage(SetupMessage(msgPrivilegesRequiredOverrideText1), ['{#MyAppName}']);
+  end
+  else
+  begin
+    Buttons.FirstId := IDYES;
+    if HasPreviousInstall then
+      Buttons.FirstText := FmtMessage(ExpandConstant('{cm:UpdateInstallMode}'), [CurrentUserText])
+    else
+      Buttons.FirstText := SetupMessage(msgPrivilegesRequiredOverrideCurrentUserRecommended);
+    Buttons.SecondId := IDNO;
+    Buttons.SecondText := AllUsersText;
+    Config.Content := FmtMessage(SetupMessage(msgPrivilegesRequiredOverrideText2), ['{#MyAppName}']);
+  end;
+
+  Config.Size := SizeOf(Config);
+  Config.Instance := GetModuleHandleW(0);
+  Config.Flags := TDF_USE_COMMAND_LINKS;
+  Config.CommonButtons := TDCBF_CANCEL_BUTTON;
+  Config.Title := SetupMessage(msgPrivilegesRequiredOverrideTitle);
+  Config.MainIcon := 'MAINICON';
+  Config.Instruction := SetupMessage(msgPrivilegesRequiredOverrideInstruction);
+  Config.ButtonCount := 2;
+  Config.Callback := LongWord(CreateCallback(@InstallModeDialogCallback));
+  Config.CallbackData := IDNO;
+  Config.Buttons := LocalAlloc(0, SizeOf(Buttons));
+  if Config.Buttons = 0 then
+    RaiseException(SysErrorMessage(GetLastError));
+  try
+    CopyInstallModeButtons(Config.Buttons, Buttons, SizeOf(Buttons));
+    if TaskDialogIndirect(Config, Result, 0, 0) <> 0 then
+      RaiseException(SetupMessage(msgCannotContinue));
+  finally
+    LocalFree(Config.Buttons);
+  end;
+end;
+
+procedure RestartSetupForAllUsers;
+var
+  SetupExe, CommandLine: string;
+  StartupInfo: TStartupInfo32;
+  ProcessInfo: TProcessInformation32;
+  I: Integer;
+  ErrorCode: DWORD;
+begin
+  // El ejecutable original procesa /ALLUSERS y solicita la elevación antes de instalar.
+  SetupExe := ExpandConstant('{srcexe}');
+  CommandLine := '"' + SetupExe + '" /ALLUSERS';
+  for I := 1 to ParamCount do
+    CommandLine := CommandLine + ' "' + ParamStr(I) + '"';
+
+  StartupInfo.cb := SizeOf(StartupInfo);
+  if not CreateProcessW(SetupExe, CommandLine, 0, 0, False, 0, 0, GetCurrentDir, StartupInfo, ProcessInfo) then
+  begin
+    ErrorCode := GetLastError;
+    MsgBox(FmtMessage(SetupMessage(msgErrorExecutingProgram), [SetupExe]) + #13#10 +
+      SysErrorMessage(ErrorCode), mbError, MB_OK);
+    Exit;
+  end;
+  CloseHandle(ProcessInfo.hThread);
+  CloseHandle(ProcessInfo.hProcess);
+end;
+
+function SelectInstallMode: Boolean;
+var
+  I: Integer;
+begin
+  Result := True;
+  for I := 1 to ParamCount do
+    if (CompareText(ParamStr(I), '/ALLUSERS') = 0) or
+       (CompareText(ParamStr(I), '/CURRENTUSER') = 0) or
+       (WizardSilent and (CompareText(ParamStr(I), '/SUPPRESSMSGBOXES') = 0)) then Exit;
+
+  case ShowInstallModeDialog of
+    IDYES: Exit;
+    IDNO: RestartSetupForAllUsers;
+  end;
+  Result := False;
+end;
+
 function RunUninstallerBounded(const UninsExe: string; var ExitCode: DWORD; var Started: Boolean): Boolean;
 var
   StartupInfo: TStartupInfo32;
@@ -907,6 +1055,7 @@ begin
 
   // Carga de instalación previa en el registro para resolución de rutas
   HasPreviousInstall := FindPreviousInstall(PreviousRootKey, PreviousUninstallExe, PreviousInstallPath);
+  if not SelectInstallMode then Exit;
 
   // Consultar la desinstalación sin crear su mutex desde el instalador.
   if CheckForMutexes(UninstallMutexName) then
