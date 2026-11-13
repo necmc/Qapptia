@@ -1,8 +1,0 @@
-pystray
-keyboard
-Pillow
-mouse
-pyinstaller
-loguru
-PySide6
-sounddevice
